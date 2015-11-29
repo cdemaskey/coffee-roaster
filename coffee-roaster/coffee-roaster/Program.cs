@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Raspberry.IO.GeneralPurpose;
+using System;
 
 namespace coffee_roaster
 {
@@ -6,9 +7,11 @@ namespace coffee_roaster
     {
         private static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-            Console.WriteLine("\n\nPress any key to exit");
-            Console.ReadKey();
+            //Console.WriteLine("Hello World!");
+            //Console.WriteLine("\n\nPress any key to exit");
+            //Console.ReadKey();
+
+            
         }
     }
 }
