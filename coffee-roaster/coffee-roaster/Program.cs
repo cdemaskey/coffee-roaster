@@ -1,14 +1,23 @@
-﻿using System;
+﻿using Raspberry.IO.GeneralPurpose;
+using System.Threading;
 
 namespace coffee_roaster
 {
-    internal class Program
+    public class Program
     {
-        private static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-            Console.WriteLine("\n\nPress any key to exit");
-            Console.ReadKey();
+            var led1 = ConnectorPin.P1Pin07.Output();
+
+            var connection = new GpioConnection(led1);
+
+            for (int i = 0; i < 100; i++)
+            {
+                connection.Toggle(led1);
+                Thread.Sleep(250);
+            }
+
+            connection.Close();
         }
     }
 }
