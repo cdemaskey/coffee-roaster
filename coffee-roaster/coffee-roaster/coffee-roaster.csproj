@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>coffee_roaster</RootNamespace>
     <AssemblyName>coffee-roaster</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
@@ -34,16 +34,20 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Raspberry.IO, Version=2.4.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Raspberry.IO.GeneralPurpose.2.4.0-alpha1\lib\net46\Raspberry.IO.dll</HintPath>
+    <Reference Include="Raspberry.IO, Version=2.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Raspberry.IO.SerialPeripheralInterface.2.3.0-alpha1\lib\net40\Raspberry.IO.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Raspberry.IO.GeneralPurpose, Version=2.4.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Raspberry.IO.GeneralPurpose.2.4.0-alpha1\lib\net46\Raspberry.IO.GeneralPurpose.dll</HintPath>
+    <Reference Include="Raspberry.IO.GeneralPurpose, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Raspberry.IO.GeneralPurpose.2.3.0\lib\net40\Raspberry.IO.GeneralPurpose.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Raspberry.IO.Interop, Version=2.4.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Raspberry.IO.GeneralPurpose.2.4.0-alpha1\lib\net46\Raspberry.IO.Interop.dll</HintPath>
+    <Reference Include="Raspberry.IO.Interop, Version=2.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Raspberry.IO.SerialPeripheralInterface.2.3.0-alpha1\lib\net40\Raspberry.IO.Interop.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Raspberry.IO.SerialPeripheralInterface, Version=2.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Raspberry.IO.SerialPeripheralInterface.2.3.0-alpha1\lib\net40\Raspberry.IO.SerialPeripheralInterface.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Raspberry.System, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -59,7 +63,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="therm.c" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
