@@ -304,7 +304,7 @@ void lcd_display_string(unsigned char line_num, char *ptr)
 // initialize and clear the display
 void lcd_init(void)
 {
-	GPIO_SET = 1 << LCD_RS_GPIO;
+	GPIO_SET = 1 << LCD_RS_GPIO; 
 	lcd_writecom(0x30);	//wake up
 	lcd_writecom(0x39);	//function set
 	lcd_writecom(0x14);	//internal osc frequency
