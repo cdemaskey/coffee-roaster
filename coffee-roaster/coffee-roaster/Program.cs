@@ -1,23 +1,27 @@
-﻿using Raspberry.IO.GeneralPurpose;
-using System.Threading;
+﻿using System;
 
 namespace coffee_roaster
 {
     public class Program
     {
+        public static int memFileDescriptor; // mem_fed
+
         public static void Main(string[] args)
         {
-            var led1 = ConnectorPin.P1Pin07.Output();
+            setup_io();
+        }
 
-            var connection = new GpioConnection(led1);
+        public static void setup_io()
+        {
+            memFileDescriptor = Libc.Open("/dev/mem", Libc.FileAccessMode.O_RDWR | Libc.FileAccessMode.O_SYNC);
 
-            for (int i = 0; i < 100; i++)
+            if (memFileDescriptor < 0)
             {
-                connection.Toggle(led1);
-                Thread.Sleep(250);
+                Console.WriteLine("can't open /dev/mem");
+                Environment.Exit(-1);
             }
 
-            connection.Close();
+            Libc.Close(memFileDescriptor);
         }
     }
 }
