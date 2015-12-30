@@ -3,6 +3,21 @@ using Raspberry.IO.SerialPeripheralInterface;
 using System;
 using System.Threading;
 
+/**********************************************************************************************
+ * Connections:
+ * TI board       RPI B+
+ * ------------   ------------------
+ * P1_1  VCC      1     3.3V
+ * P1_7  CLK      23    CLK
+ * P1_8  ADS_CS   26    SPI_CE1
+ * P2_8  LCD_CS   24    SPI_CE0
+ * P2_9  LCD_RS   11    GPIO_17_GEN0
+ * P2_10 LCD_RST  16    GPIO_23
+ * P2_1  GND      9     GND
+ * P2_6  SIMO     19    MOSI
+ * P2_7  SOMI     21    MISO
+ ************************************************************************************************/
+
 namespace coffee_roaster
 {
     public class Ti430BoostAds1118Connection : IDisposable
@@ -10,28 +25,20 @@ namespace coffee_roaster
         private const int BitsPerWord = 8;
         private const int SpiSpeed = 3932160;
 
-        private readonly INativeSpiConnection spiCe0;
-        private readonly INativeSpiConnection spiCe1;
-        private readonly IOutputBinaryPin lcdRsGpio; // LCD Register Select Signal. RS=0: instruction; RS=1: data
+        private readonly INativeSpiConnection spi;
+        private readonly IOutputBinaryPin lcdRegisterSelectGpio; // LCD Register Select Signal. RS=0: instruction; RS=1: data
+        private readonly IOutputBinaryPin lcdResetGpio;
 
-        public Ti430BoostAds1118Connection(INativeSpiConnection spiCe0, INativeSpiConnection spiCe1, bool initializeSpi, IOutputBinaryPin lcdRsGpio)
+        public Ti430BoostAds1118Connection(INativeSpiConnection spi, IOutputBinaryPin lcdRegisterSelectGpio, IOutputBinaryPin lcdResetGpio)
         {
-            this.spiCe0 = spiCe0;
-            this.spiCe1 = spiCe1;
-            this.lcdRsGpio = lcdRsGpio;
+            Console.WriteLine("Ti430BoosAds1118Connection constructor");
+            this.spi = spi;
+            this.lcdRegisterSelectGpio = lcdRegisterSelectGpio;
+            this.lcdResetGpio = lcdResetGpio;
 
-            if (initializeSpi)
-            {
-                this.spiCe0.SetBitsPerWord(BitsPerWord);
-                this.spiCe0.SetDelay(0);
-                this.spiCe0.SetMaxSpeed(SpiSpeed);
-                this.spiCe0.SetSpiMode(SpiMode.Mode0);
+            this.lcdResetGpio.Write(true);
 
-                this.spiCe1.SetBitsPerWord(BitsPerWord);
-                this.spiCe1.SetDelay(0);
-                this.spiCe1.SetMaxSpeed(SpiSpeed);
-                this.spiCe1.SetSpiMode(SpiMode.Mode1);
-            }
+            this.InitializeLcd();
         }
 
         public void DelayMs(int ms)
@@ -41,7 +48,10 @@ namespace coffee_roaster
 
         public void InitializeLcd()
         {
-            this.lcdRsGpio.Write(true);
+            Console.WriteLine("Ti430BoosAds1118Connection InitializeLcd");
+
+            this.DelayMs(4); // wait for LCD to power on
+            this.lcdRegisterSelectGpio.Write(true);
             this.WriteCommandToLcd(LcdCommand.WakeUp);
             this.WriteCommandToLcd(LcdCommand.FunctionSet);
             this.WriteCommandToLcd(LcdCommand.InternalOscFrequency);
@@ -56,16 +66,17 @@ namespace coffee_roaster
 
         public void WriteCommandToLcd(LcdCommand command)
         {
-            this.lcdRsGpio.Write(false);
+            Console.WriteLine("Ti430BoosAds1118Connection WriteCommandToLcd ({0})", command.ToString());
+            this.lcdRegisterSelectGpio.Write(false);
             var ret = 0;
-            using (var transferBuffer = this.spiCe0.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
+            using (var transferBuffer = this.spi.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
             {
                 transferBuffer.Tx[0] = Convert.ToByte(command);
                 transferBuffer.Delay = 0;
                 transferBuffer.Speed = SpiSpeed;
                 transferBuffer.BitsPerWord = BitsPerWord;
                 transferBuffer.ChipSelectChange = true;
-                ret = this.spiCe0.Transfer(transferBuffer);
+                ret = this.spi.Transfer(SpiDevice.device0, transferBuffer);
             }
 
             if (ret < 0)
@@ -75,18 +86,19 @@ namespace coffee_roaster
             }
         }
 
-        public void WriateDataToLcd(char c)
+        public void WriteDataToLcd(char c)
         {
-            this.lcdRsGpio.Write(true);
+            Console.WriteLine("Ti430BoosAds1118Connection WriteDataToLcd ({0})", c);
+            this.lcdRegisterSelectGpio.Write(true);
             var ret = 0;
-            using (var transferBuffer = this.spiCe0.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
+            using (var transferBuffer = this.spi.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
             {
                 transferBuffer.Tx[0] = Convert.ToByte(c);
                 transferBuffer.Delay = 0;
                 transferBuffer.Speed = SpiSpeed;
                 transferBuffer.BitsPerWord = BitsPerWord;
                 transferBuffer.ChipSelectChange = true;
-                ret = this.spiCe0.Transfer(transferBuffer);
+                ret = this.spi.Transfer(SpiDevice.device0, transferBuffer);
             }
 
             if (ret < 0)
@@ -104,6 +116,26 @@ namespace coffee_roaster
             this.DelayMs(2);
         }
 
+        public void DisplayStringOnLcd(LcdLine line, string displayString)
+        {
+            Console.WriteLine("Ti430BoosAds1118Connection DisplayStringOnLcd ({0}, {1})", line.ToString(), displayString);
+            switch (line)
+            {
+                case LcdLine.SecondLine:
+                    this.WriteCommandToLcd(LcdCommand.LcdSecondLine);
+                    break;
+                case LcdLine.FirstLine:
+                default:
+                    this.WriteCommandToLcd(LcdCommand.LcdFirstLine);
+                    break;
+            }
+
+            foreach (char stringCharacter in displayString)
+            {
+                this.WriteDataToLcd(stringCharacter);
+            }
+        }
+
         public void Dispose()
         {
             this.Dispose(true);
@@ -114,9 +146,9 @@ namespace coffee_roaster
         {
             if (disposing)
             {
-                this.spiCe0.Dispose();
-                this.spiCe1.Dispose();
-                this.lcdRsGpio.Dispose();
+                this.spi.Dispose();
+                this.lcdRegisterSelectGpio.Dispose();
+                this.lcdResetGpio.Dispose();
             }
         }
     }

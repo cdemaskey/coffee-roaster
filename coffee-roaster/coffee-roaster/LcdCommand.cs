@@ -11,6 +11,8 @@
         DisplayOn = 0x0C,
         EntryMode = 0x06,
         Clear = 0x01,
-        ZeroTwo = 0x02
+        ZeroTwo = 0x02,
+        LcdFirstLine = 0x80,
+        LcdSecondLine = 0xC0
     }
 }
