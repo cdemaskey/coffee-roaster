@@ -1,7 +1,6 @@
 ﻿using Raspberry.IO;
 using Raspberry.IO.SerialPeripheralInterface;
 using System;
-using System.Threading;
 
 /**********************************************************************************************
  * Connections:
@@ -20,37 +19,48 @@ using System.Threading;
 
 namespace coffee_roaster
 {
+    public enum AdsMode : uint
+    {
+        InternalSensor = 0x0010,
+        ExternalSignal = 0
+    }
+
+    public enum AdsConnectionChannel : uint
+    {
+        Channel0 = 0x8B8A,
+        Channel1 = 0xBB8A
+    }
+
     public class Ti430BoostAds1118Connection : IDisposable
     {
         private const int BitsPerWord = 8;
         private const int SpiSpeed = 3932160;
+        private const int BUFSIZE = 64;
 
-        private readonly INativeSpiConnection spi;
+        private readonly INativeSpiConnection spi0;
+        private readonly INativeSpiConnection spi1;
         private readonly IOutputBinaryPin lcdRegisterSelectGpio; // LCD Register Select Signal. RS=0: instruction; RS=1: data
         private readonly IOutputBinaryPin lcdResetGpio;
 
-        public Ti430BoostAds1118Connection(INativeSpiConnection spi, IOutputBinaryPin lcdRegisterSelectGpio, IOutputBinaryPin lcdResetGpio)
+        public Ti430BoostAds1118Connection(INativeSpiConnection spi0, INativeSpiConnection spi1, IOutputBinaryPin lcdRegisterSelectGpio, IOutputBinaryPin lcdResetGpio)
         {
-            Console.WriteLine("Ti430BoosAds1118Connection constructor");
-            this.spi = spi;
+            this.spi0 = spi0;
+            this.spi1 = spi1;
             this.lcdRegisterSelectGpio = lcdRegisterSelectGpio;
             this.lcdResetGpio = lcdResetGpio;
 
+            this.lcdRegisterSelectGpio.Write(true);
             this.lcdResetGpio.Write(true);
-
-            this.InitializeLcd();
         }
 
-        public void DelayMs(int ms)
+        public void DelayMicroSeconds(int microSeconds)
         {
-            Thread.Sleep(ms);
+            var microsecondTimeSpan = Raspberry.Timers.TimeSpanUtility.FromMicroseconds(Convert.ToDouble(microSeconds));
+            Raspberry.Timers.Timer.Sleep(microsecondTimeSpan);
         }
 
         public void InitializeLcd()
         {
-            Console.WriteLine("Ti430BoosAds1118Connection InitializeLcd");
-
-            this.DelayMs(4); // wait for LCD to power on
             this.lcdRegisterSelectGpio.Write(true);
             this.WriteCommandToLcd(LcdCommand.WakeUp);
             this.WriteCommandToLcd(LcdCommand.FunctionSet);
@@ -61,22 +71,22 @@ namespace coffee_roaster
             this.WriteCommandToLcd(LcdCommand.DisplayOn);
             this.WriteCommandToLcd(LcdCommand.EntryMode);
             this.WriteCommandToLcd(LcdCommand.Clear);
-            this.DelayMs(20);
+            this.DelayMicroSeconds(20);
         }
 
         public void WriteCommandToLcd(LcdCommand command)
         {
-            Console.WriteLine("Ti430BoosAds1118Connection WriteCommandToLcd ({0})", command.ToString());
             this.lcdRegisterSelectGpio.Write(false);
             var ret = 0;
-            using (var transferBuffer = this.spi.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
+
+            using (var transferBuffer = this.spi0.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
             {
                 transferBuffer.Tx[0] = Convert.ToByte(command);
                 transferBuffer.Delay = 0;
                 transferBuffer.Speed = SpiSpeed;
                 transferBuffer.BitsPerWord = BitsPerWord;
-                transferBuffer.ChipSelectChange = true;
-                ret = this.spi.Transfer(SpiDevice.device0, transferBuffer);
+                transferBuffer.ChipSelectChange = false;
+                ret = this.spi0.Transfer(transferBuffer);
             }
 
             if (ret < 0)
@@ -88,17 +98,16 @@ namespace coffee_roaster
 
         public void WriteDataToLcd(char c)
         {
-            Console.WriteLine("Ti430BoosAds1118Connection WriteDataToLcd ({0})", c);
             this.lcdRegisterSelectGpio.Write(true);
             var ret = 0;
-            using (var transferBuffer = this.spi.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
+            using (var transferBuffer = this.spi0.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
             {
                 transferBuffer.Tx[0] = Convert.ToByte(c);
                 transferBuffer.Delay = 0;
                 transferBuffer.Speed = SpiSpeed;
                 transferBuffer.BitsPerWord = BitsPerWord;
-                transferBuffer.ChipSelectChange = true;
-                ret = this.spi.Transfer(SpiDevice.device0, transferBuffer);
+                transferBuffer.ChipSelectChange = false;
+                ret = this.spi0.Transfer(transferBuffer);
             }
 
             if (ret < 0)
@@ -111,19 +120,19 @@ namespace coffee_roaster
         public void ClearLcd()
         {
             this.WriteCommandToLcd(LcdCommand.Clear);
-            this.DelayMs(2);
+            this.DelayMicroSeconds(2);
             this.WriteCommandToLcd(LcdCommand.ZeroTwo);
-            this.DelayMs(2);
+            this.DelayMicroSeconds(2);
         }
 
         public void DisplayStringOnLcd(LcdLine line, string displayString)
         {
-            Console.WriteLine("Ti430BoosAds1118Connection DisplayStringOnLcd ({0}, {1})", line.ToString(), displayString);
             switch (line)
             {
                 case LcdLine.SecondLine:
                     this.WriteCommandToLcd(LcdCommand.LcdSecondLine);
                     break;
+
                 case LcdLine.FirstLine:
                 default:
                     this.WriteCommandToLcd(LcdCommand.LcdFirstLine);
@@ -136,6 +145,321 @@ namespace coffee_roaster
             }
         }
 
+        public double GetMeasurement()
+        {
+            int result;
+            int localData;
+            double resultD;
+
+            thermTransact(AdsMode.InternalSensor, AdsConnectionChannel.Channel0); // start internal sensor measurement
+            DelayMicroSeconds(10);
+            localData = thermTransact(AdsMode.ExternalSignal, AdsConnectionChannel.Channel0); // read internal sensor measurement and start external sensor measurement
+            DelayMicroSeconds(10);
+            result = thermTransact(AdsMode.ExternalSignal, AdsConnectionChannel.Channel0); // read external sensor measurement and restart external sensor measurement
+
+            int localComp = localCompensation(localData);
+            result = result + localComp;
+            result = result & 0xffff;
+            result = adcCode2Temp(result);
+
+            resultD = Convert.ToDouble(result) / 10;
+
+            return resultD;
+        }
+
+        //public void adsConfig(AdsMode mode, AdsConnectionChannel channel)
+        //{
+        //    uint tmp;
+        //    int ret;
+
+        //    //switch (channel)
+        //    //{
+        //    //    case AdsConnectionChannel.Channel1:
+        //    //        switch (mode)
+        //    //        {
+        //    //            case AdsMode.ExternalSignal: // Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
+        //    //                tmp = ADSCON_CH1;
+        //    //                break;
+        //    //            case AdsMode.InternalSensor:
+        //    //            default:
+        //    //                tmp = ASDCON_CH1 + ADS1118_TS; // internal temperature sensor mode.DR=8sps, PULLUP on DOUT
+        //    //                break;
+        //    //        }
+
+        //    //        break;
+        //    //    case AdsConnectionChannel.Channel0:
+        //    //    default:
+        //    //        switch (mode)
+        //    //        {
+        //    //            case AdsMode.ExternalSignal: // Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
+        //    //                tmp = ADSCON_CH0;
+        //    //                break;
+        //    //            case AdsMode.InternalSensor:
+        //    //            default:
+        //    //                tmp = ADSCON_CH0 + ADS1118_TS; // internal temperature sensor mode.DR=8sps, PULLUP on DOUT
+        //    //                break;
+        //    //        }
+
+        //    //        break;
+        //    //}
+
+        //    tmp = Convert.ToUInt32(channel) + Convert.ToUInt32(mode);
+
+        //    //txbuf[0] = (unsigned char)((tmp >> 8) & 0xff);
+        //    //txbuf[1] = (unsigned char)(tmp & 0xff);
+
+        //    ret = thermTransact();
+        //}
+
+        //public int adsRead(AdsMode mode, AdsConnectionChannel channel)
+        //{
+        //    uint tmp;
+        //    int result;
+
+        //    //switch (channel)
+        //    //{
+        //    //    case AdsConnectionChannel.Channel1:
+        //    //        switch (mode)
+        //    //        {
+        //    //            case AdsMode.ExternalSignal: // Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
+        //    //                tmp = ADSCON_CH1;
+        //    //                break;
+        //    //            case AdsMode.InternalSensor:
+        //    //            default:
+        //    //                tmp = ASDCON_CH1 + ADS1118_TS; // internal temperature sensor mode.DR=8sps, PULLUP on DOUT
+        //    //                break;
+        //    //        }
+
+        //    //        break;
+        //    //    case AdsConnectionChannel.Channel0:
+        //    //    default:
+        //    //        switch (mode)
+        //    //        {
+        //    //            case AdsMode.ExternalSignal: // Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
+        //    //                tmp = ADSCON_CH0;
+        //    //                break;
+        //    //            case AdsMode.InternalSensor:
+        //    //            default:
+        //    //                tmp = ADSCON_CH0 + ADS1118_TS; // internal temperature sensor mode.DR=8sps, PULLUP on DOUT
+        //    //                break;
+        //    //        }
+
+        //    //        break;
+        //    //}
+
+        //    tmp = Convert.ToUInt32(channel) + Convert.ToUInt32(mode);
+
+        //    //txbuf[0] = (unsigned char)((tmp >> 8) & 0xff);
+        //    //txbuf[1] = (unsigned char)(tmp & 0xff);
+
+        //    result = thermTransact();
+
+        //    return result;
+        //}
+
+        public int localCompensation(int localCode)
+        {
+            Console.WriteLine("localCompensation: localCode = {0}", localCode);
+
+            float tmp;
+            float local_temp;
+            int comp;
+            localCode = localCode / 4;
+            local_temp = (float)localCode / 32;    //
+
+            if (local_temp >= 0 && local_temp <= 5)     //0~5
+            {
+                tmp = (0x0019 * local_temp) / 5;
+                comp = Convert.ToInt32(tmp);
+            }
+            else if (local_temp > 5 && local_temp <= 10)    //5~10
+            {
+                tmp = (0x001A * (local_temp - 5)) / 5 + 0x0019;
+                comp = Convert.ToInt32(tmp);
+            }
+            else if (local_temp > 10 && local_temp <= 20)   //10~20
+            {
+                tmp = (0x0033 * (local_temp - 10)) / 10 + 0x0033;
+                comp = Convert.ToInt32(tmp);
+            }
+            else if (local_temp > 20 && local_temp <= 30)   //20~30
+            {
+                tmp = (0x0034 * (local_temp - 20)) / 10 + 0x0066;
+                comp = Convert.ToInt32(tmp);
+            }
+            else if (local_temp > 30 && local_temp <= 40)   //30~40
+            {
+                tmp = (0x0034 * (local_temp - 30)) / 10 + 0x009A;
+                comp = Convert.ToInt32(tmp);
+            }
+            else if (local_temp > 40 && local_temp <= 50)   //40~50
+            {
+                tmp = (0x0035 * (local_temp - 40)) / 10 + 0x00CE;
+                comp = Convert.ToInt32(tmp);
+            }
+            else if (local_temp > 50 && local_temp <= 60)   //50~60
+            {
+                tmp = (0x0035 * (local_temp - 50)) / 10 + 0x0103;
+                comp = Convert.ToInt32(tmp);
+            }
+            else if (local_temp > 60 && local_temp <= 80)   //60~80
+            {
+                tmp = (0x006A * (local_temp - 60)) / 20 + 0x0138;
+                comp = Convert.ToInt32(tmp);
+            }
+            else if (local_temp > 80 && local_temp <= 125)//80~125
+            {
+                tmp = (0x00EE * (local_temp - 80)) / 45 + 0x01A2;
+                comp = Convert.ToInt32(tmp);
+            }
+            else
+            {
+                comp = 0;
+            }
+
+            Console.WriteLine("localCompensation : return = {0}", comp);
+
+            return comp;
+        }
+
+        public int adcCode2Temp(int code)
+        {
+            Console.WriteLine("adcCode2Temp : code = {0}", code);
+
+            float temp;
+            int t;
+
+            temp = (float)code;
+
+            if (code > 0xFF6C && code <= 0xFFB5)            //-30~-15
+            {
+                temp = (float)(15 * (temp - 0xFF6C)) / 0x0049 - 30.0f;
+            }
+            else if (code > 0xFFB5 && code <= 0xFFFF)   //-15~0
+            {
+                temp = (float)(15 * (temp - 0xFFB5)) / 0x004B - 15.0f;
+            }
+            else if (code >= 0 && code <= 0x0019)           //0~5
+            {
+                temp = (float)(5 * (temp - 0)) / 0x0019;
+            }
+            else if (code > 0x0019 && code <= 0x0033)       //5~10
+            {
+                temp = (float)(5 * (temp - 0x0019)) / 0x001A + 5.0f;
+            }
+            else if (code > 0x0033 && code <= 0x0066)       //10~20
+            {
+                temp = (float)(10 * (temp - 0x0033)) / 0x0033 + 10.0f;
+            }
+            else if (code > 0x0066 && code <= 0x009A)   //20~30
+            {
+                temp = (float)(10 * (temp - 0x0066)) / 0x0034 + 20.0f;
+            }
+            else if (code > 0x009A && code <= 0x00CE)   //30~40
+            {
+                temp = (float)(10 * (temp - 0x009A)) / 0x0034 + 30.0f;
+            }
+            else if (code > 0x00CE && code <= 0x0103)   //40~50
+            {
+                temp = (float)(10 * (temp - 0x00CE)) / 0x0035 + 40.0f;
+            }
+            else if (code > 0x0103 && code <= 0x0138)   //50~60
+            {
+                temp = (float)(10 * (temp - 0x0103)) / 0x0035 + 50.0f;
+            }
+            else if (code > 0x0138 && code <= 0x01A2)   //60~80
+            {
+                temp = (float)(20 * (temp - 0x0138)) / 0x006A + 60.0f;
+            }
+            else if (code > 0x01A2 && code <= 0x020C)   //80~100
+            {
+                temp = (float)((temp - 0x01A2) * 20) / 0x06A + 80.0f;
+            }
+            else if (code > 0x020C && code <= 0x02DE)   //100~140
+            {
+                temp = (float)((temp - 0x020C) * 40) / 0x0D2 + 100.0f;
+            }
+            else if (code > 0x02DE && code <= 0x03AC)   //140~180
+            {
+                temp = (float)((temp - 0x02DE) * 40) / 0x00CE + 140.0f;
+            }
+            else if (code > 0x03AC && code <= 0x0478)   //180~220
+            {
+                temp = (float)((temp - 0x03AB) * 40) / 0x00CD + 180.0f;
+            }
+            else if (code > 0x0478 && code <= 0x0548)   //220~260
+            {
+                temp = (float)((temp - 0x0478) * 40) / 0x00D0 + 220.0f;
+            }
+            else if (code > 0x0548 && code <= 0x061B)   //260~300
+            {
+                temp = (float)((temp - 0x0548) * 40) / 0x00D3 + 260.0f;
+            }
+            else if (code > 0x061B && code <= 0x06F2)   //300~340
+            {
+                temp = (float)((temp - 0x061B) * 40) / 0x00D7 + 300.0f;
+            }
+            else if (code > 0x06F2 && code <= 0x07C7)   //340~400
+            {
+                temp = (float)((temp - 0x06F2) * 40) / 0x00D5 + 340.0f;
+            }
+            else if (code > 0x07C7 && code <= 0x089F)   //380~420
+            {
+                temp = (float)((temp - 0x07C7) * 40) / 0x00D8 + 380.0f;
+            }
+            else if (code > 0x089F && code <= 0x0978)   //420~460
+            {
+                temp = (float)((temp - 0x089F) * 40) / 0x00D9 + 420.0f;
+            }
+            else if (code > 0x0978 && code <= 0x0A52)   //460~500
+            {
+                temp = (float)((temp - 0x0978) * 40) / 0x00DA + 460.0f;
+            }
+            else
+            {
+                temp = 0xA5A5;
+            }
+
+            t = (int)(10 * temp);
+
+            Console.WriteLine("adcCode2Temp : return = {0}", t);
+
+            return t;
+        }
+
+        public int thermTransact(AdsMode mode, AdsConnectionChannel channel)
+        {
+            int ret;
+
+            using (var transferBuffer = this.spi1.CreateTransferBuffer(4, SpiTransferMode.ReadWrite))
+            {
+                uint tmp = Convert.ToUInt32(channel) + Convert.ToUInt32(mode);
+
+                transferBuffer.Tx[0] = Convert.ToByte(((tmp >> 8) & 0xff) | 0x80);
+                transferBuffer.Tx[1] = Convert.ToByte(tmp & 0xff);
+                transferBuffer.Tx[2] = transferBuffer.Tx[0];
+                transferBuffer.Tx[3] = transferBuffer.Tx[1];
+
+                Console.WriteLine("sending [{0} {1} {2} {3}]", transferBuffer.Tx[0], transferBuffer.Tx[1], transferBuffer.Tx[2], transferBuffer.Tx[3]);
+
+                ret = this.spi1.Transfer(transferBuffer);
+
+                if (ret < 0)
+                {
+                    Console.WriteLine("Error performing SPI exchange: {0}", Console.Error.ToString());
+                    Environment.Exit(1);
+                }
+
+                Console.WriteLine("received [{0} {1}]", transferBuffer.Rx[0], transferBuffer.Rx[1]);
+
+                ret = BitConverter.ToInt16(new byte[] { transferBuffer.Rx[0], transferBuffer.Rx[1] }, 0);
+            }
+
+            Console.WriteLine("ThermTransact return : {0}", ret);
+
+            return ret;
+        }
+
         public void Dispose()
         {
             this.Dispose(true);
@@ -146,9 +470,10 @@ namespace coffee_roaster
         {
             if (disposing)
             {
-                this.spi.Dispose();
-                this.lcdRegisterSelectGpio.Dispose();
-                this.lcdResetGpio.Dispose();
+                this.spi0?.Dispose();
+                this.spi1?.Dispose();
+                this.lcdRegisterSelectGpio?.Dispose();
+                this.lcdResetGpio?.Dispose();
             }
         }
     }
