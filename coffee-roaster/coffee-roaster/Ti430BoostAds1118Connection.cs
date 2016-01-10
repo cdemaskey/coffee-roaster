@@ -1,4 +1,5 @@
-﻿using Raspberry.IO;
+﻿using coffee_roaster.Enums;
+using Raspberry.IO;
 using Raspberry.IO.SerialPeripheralInterface;
 using System;
 
@@ -19,23 +20,10 @@ using System;
 
 namespace coffee_roaster
 {
-    public enum AdsMode : uint
-    {
-        InternalSensor = 0x0010,
-        ExternalSignal = 0
-    }
-
-    public enum AdsConnectionChannel : uint
-    {
-        Channel0 = 0x8B8A,
-        Channel1 = 0xBB8A
-    }
-
-    public class Ti430BoostAds1118Connection : IDisposable
+    public class Ti430BoostAds1118Connection : IDisposable, ITi430BoostAds1118Connection
     {
         private const int BitsPerWord = 8;
         private const int SpiSpeed = 3932160;
-        private const int BUFSIZE = 64;
 
         private readonly INativeSpiConnection spi0;
         private readonly INativeSpiConnection spi1;
@@ -147,22 +135,23 @@ namespace coffee_roaster
 
         public double GetMeasurement()
         {
-            int result;
-            int localData;
-            double resultD;
-
-            thermTransact(AdsMode.InternalSensor, AdsConnectionChannel.Channel0); // start internal sensor measurement
+            thermTransact(Ads1118Mode.InternalSensor, Ads1118ConnectionChannel.Channel0); // start internal sensor measurement
             DelayMicroSeconds(10);
-            localData = thermTransact(AdsMode.ExternalSignal, AdsConnectionChannel.Channel0); // read internal sensor measurement and start external sensor measurement
+            int localData = thermTransact(Ads1118Mode.ExternalSignal, Ads1118ConnectionChannel.Channel0); // read internal sensor measurement and start external sensor measurement
+            Console.WriteLine("Internal Sensor Measures: {0}", localData);
             DelayMicroSeconds(10);
-            result = thermTransact(AdsMode.ExternalSignal, AdsConnectionChannel.Channel0); // read external sensor measurement and restart external sensor measurement
+            int result = thermTransact(Ads1118Mode.ExternalSignal, Ads1118ConnectionChannel.Channel0); // read external sensor measurement and restart external sensor measurement
+            Console.WriteLine("External Sensor Measures: {0}", result);
 
             int localComp = localCompensation(localData);
+            Console.WriteLine("Local Compensation: {0}", localComp);
+
             result = result + localComp;
-            result = result & 0xffff;
+            Console.WriteLine("External Sensor + Local Compensation: {0}", result);
+            //result = result & 0xffff;
             result = adcCode2Temp(result);
 
-            resultD = Convert.ToDouble(result) / 10;
+            double resultD = Convert.ToDouble(result) / 10;
 
             return resultD;
         }
@@ -427,20 +416,31 @@ namespace coffee_roaster
             return t;
         }
 
-        public int thermTransact(AdsMode mode, AdsConnectionChannel channel)
+        public int thermTransact(Ads1118Mode mode, Ads1118ConnectionChannel channel)
         {
             int ret;
 
-            using (var transferBuffer = this.spi1.CreateTransferBuffer(4, SpiTransferMode.ReadWrite))
+            using (var transferBuffer = this.spi1.CreateTransferBuffer(8, SpiTransferMode.ReadWrite))
             {
                 uint tmp = Convert.ToUInt32(channel) + Convert.ToUInt32(mode);
+                Console.WriteLine("Channel + Mode = {0} Hex: {1}", tmp, tmp.ToString("x"));
+                byte[] tmpBytes = BitConverter.GetBytes(tmp);
 
-                transferBuffer.Tx[0] = Convert.ToByte(((tmp >> 8) & 0xff) | 0x80);
-                transferBuffer.Tx[1] = Convert.ToByte(tmp & 0xff);
-                transferBuffer.Tx[2] = transferBuffer.Tx[0];
-                transferBuffer.Tx[3] = transferBuffer.Tx[1];
+                Console.Write("tmpBytes: [");
+                foreach (var oneTmpByte in tmpBytes)
+                {
+                    Console.Write("{0} ", oneTmpByte.ToString("x"));
+                }
 
-                Console.WriteLine("sending [{0} {1} {2} {3}]", transferBuffer.Tx[0], transferBuffer.Tx[1], transferBuffer.Tx[2], transferBuffer.Tx[3]);
+                Console.WriteLine("]");
+
+                transferBuffer.Tx.Copy(tmpBytes, 0, 0, tmpBytes.Length);
+                transferBuffer.Tx.Copy(tmpBytes, 0, tmpBytes.Length, tmpBytes.Length);
+
+                //transferBuffer.Tx[0] = Convert.ToByte(((tmp >> 8) & 0xff) | 0x80);
+                //transferBuffer.Tx[1] = Convert.ToByte(tmp & 0xff);
+                //transferBuffer.Tx[2] = transferBuffer.Tx[0];
+                //transferBuffer.Tx[3] = transferBuffer.Tx[1];
 
                 ret = this.spi1.Transfer(transferBuffer);
 
@@ -450,9 +450,66 @@ namespace coffee_roaster
                     Environment.Exit(1);
                 }
 
-                Console.WriteLine("received [{0} {1}]", transferBuffer.Rx[0], transferBuffer.Rx[1]);
+                ret = 0;
 
-                ret = BitConverter.ToInt16(new byte[] { transferBuffer.Rx[0], transferBuffer.Rx[1] }, 0);
+                Console.WriteLine("Rx Length: {0}", transferBuffer.Rx.Length);
+
+                var rxBytes = new byte[transferBuffer.Length];
+                transferBuffer.Rx.Copy(0, rxBytes, 0, transferBuffer.Length);
+
+                Console.Write("Rx Bytes: [");
+                foreach (var oneRxByte in rxBytes)
+                {
+                    Console.Write("{0} ", oneRxByte.ToString("x"));
+                }
+
+                Console.WriteLine("]");
+
+                long LongValue = 0;
+
+                if (rxBytes.Length == 8)
+                {
+                    LongValue = BitConverter.ToInt64(rxBytes, 0);
+                }
+                else if (rxBytes.Length == 4)
+                {
+                    LongValue = BitConverter.ToInt32(rxBytes, 0);
+                }
+                else if (rxBytes.Length == 2)
+                {
+                    LongValue = BitConverter.ToInt16(rxBytes, 0);
+                }
+                else
+                {
+                    Console.WriteLine("Something is worng! rxBytes is not 2, 4, or 8 bytes long!");
+                    Environment.Exit(-1);
+                }
+
+                Console.WriteLine("Long Value: {0} Hex: {1}", LongValue, LongValue.ToString("x"));
+
+                //Console.WriteLine("first 16 bits [{0} {1}]", rxBytes[0].ToString("x"), rxBytes[1].ToString("x"));
+
+                //int first16bits = BitConverter.ToInt16(rxBytes, 0);
+
+                //Console.WriteLine("First 16 Bits Converted to int: {0} and Hex: {1}", first16bits, first16bits.ToString("x"));
+
+                //int shifted8bitsleft = first16bits << 8;
+
+                //Console.WriteLine("First 16 Bits Shifted : {0} and Hex: {1}", shifted8bitsleft, shifted8bitsleft.ToString("x"));
+
+                //transferBuffer.Rx.Copy(2, rxBytes, 0, 2);
+
+                //Console.WriteLine("second 16 bits [{0} {1}]", rxBytes[0].ToString("x"), rxBytes[1].ToString("x"));
+
+                //int second16bits = BitConverter.ToInt16(rxBytes, 0);
+
+                //Console.WriteLine("second 16 Bits Converted to int: {0} and Hex: {1}", second16bits, second16bits.ToString("x"));
+
+                //int bitwiseOr = shifted8bitsleft | second16bits;
+
+                //Console.WriteLine("bitwise or between shifted bits and second bits: {0} and Hex: {1}", bitwiseOr, bitwiseOr.ToString("x"));
+
+                //ret = bitwiseOr;
             }
 
             Console.WriteLine("ThermTransact return : {0}", ret);

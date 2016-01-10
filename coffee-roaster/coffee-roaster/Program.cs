@@ -1,4 +1,5 @@
-﻿using Raspberry.IO.GeneralPurpose;
+﻿using coffee_roaster.Enums;
+using Raspberry.IO.GeneralPurpose;
 using Raspberry.IO.SerialPeripheralInterface;
 using System;
 using System.Threading;
@@ -42,22 +43,12 @@ namespace coffee_roaster
                 {
                     deviceConnection.InitializeLcd();
                     deviceConnection.DisplayStringOnLcd(LcdLine.FirstLine, "Hello!");
-                    Thread.Sleep(5000);
-
-                    deviceConnection.ClearLcd();
-                    deviceConnection.DisplayStringOnLcd(LcdLine.FirstLine, "Displaying Temperature 10 times");
-
                     Thread.Sleep(500);
 
-                    for (int i = 0; i < 10; i++)
-                    {
-                        deviceConnection.DisplayStringOnLcd(LcdLine.FirstLine, string.Format("Temperature {0}", i + 1));
-                        var temp = deviceConnection.GetMeasurement();
-                        deviceConnection.DisplayStringOnLcd(LcdLine.SecondLine, string.Format("TEMP: {0} F", temp));
-                        Thread.Sleep(1000);
-                    }
+                    deviceConnection.ClearLcd();
 
-                    Thread.Sleep(5000);
+                    var temp = deviceConnection.GetMeasurement();
+                    deviceConnection.DisplayStringOnLcd(LcdLine.SecondLine, string.Format("TEMP: {0} F", temp));
                 }
             }
             catch (Exception ex)

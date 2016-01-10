@@ -58,8 +58,11 @@
     <Reference Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="LcdCommand.cs" />
-    <Compile Include="LcdLine.cs" />
+    <Compile Include="Enums\Ads1118ConnectionChannel.cs" />
+    <Compile Include="Enums\Ads1118Mode.cs" />
+    <Compile Include="Enums\LcdCommand.cs" />
+    <Compile Include="ITi430BoostAds1118Connection.cs" />
+    <Compile Include="Enums\LcdLine.cs" />
     <Compile Include="Ti430BoostAds1118Connection.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
