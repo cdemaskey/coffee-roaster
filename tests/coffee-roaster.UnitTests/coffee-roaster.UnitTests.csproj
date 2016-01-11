@@ -6,7 +6,7 @@
     <ProjectGuid>{16003515-1AB9-4315-B48F-4AD3AC0712F4}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>coffee_roaster.UnitTests</RootNamespace>
+    <RootNamespace>CoffeeRoaster.UnitTests</RootNamespace>
     <AssemblyName>coffee-roaster.UnitTests</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -35,7 +35,28 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Moq, Version=4.2.1510.2205, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Moq.4.2.1510.2205\lib\net40\Moq.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Raspberry.IO, Version=2.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Raspberry.IO.SerialPeripheralInterface.2.3.0-alpha1\lib\net40\Raspberry.IO.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Raspberry.IO.Interop, Version=2.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Raspberry.IO.SerialPeripheralInterface.2.3.0-alpha1\lib\net40\Raspberry.IO.Interop.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Raspberry.IO.SerialPeripheralInterface, Version=2.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Raspberry.IO.SerialPeripheralInterface.2.3.0-alpha1\lib\net40\Raspberry.IO.SerialPeripheralInterface.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Raspberry.System, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Raspberry.System.2.0.0\lib\net40\Raspberry.System.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -52,6 +73,20 @@
   <ItemGroup>
     <Compile Include="Ti430BoostAds1118ConnectionUnitTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\coffee-roaster\coffee-roaster.csproj">
+      <Project>{d8044371-5b58-426f-85da-825574ccd95f}</Project>
+      <Name>coffee-roaster</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0-rc3\analyzers\dotnet\cs\Newtonsoft.Json.dll" />
+    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0-rc3\analyzers\dotnet\cs\StyleCop.Analyzers.CodeFixes.dll" />
+    <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0-rc3\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

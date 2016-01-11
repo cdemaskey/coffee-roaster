@@ -1,10 +1,10 @@
-﻿using coffee_roaster.Enums;
+﻿using CoffeeRoaster.Enums;
 using Raspberry.IO.GeneralPurpose;
 using Raspberry.IO.SerialPeripheralInterface;
 using System;
 using System.Threading;
 
-namespace coffee_roaster
+namespace CoffeeRoaster
 {
     public class Program
     {

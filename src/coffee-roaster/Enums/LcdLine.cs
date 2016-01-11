@@ -1,4 +1,4 @@
-﻿namespace coffee_roaster.Enums
+﻿namespace CoffeeRoaster.Enums
 {
     public enum LcdLine
     {

@@ -1,4 +1,4 @@
-﻿using coffee_roaster.Enums;
+﻿using CoffeeRoaster.Enums;
 using Raspberry.IO;
 using Raspberry.IO.SerialPeripheralInterface;
 using System;
@@ -18,7 +18,7 @@ using System;
  * P2_7  SOMI     21    MISO
  ************************************************************************************************/
 
-namespace coffee_roaster
+namespace CoffeeRoaster
 {
     public class Ti430BoostAds1118Connection : IDisposable, ITi430BoostAds1118Connection
     {

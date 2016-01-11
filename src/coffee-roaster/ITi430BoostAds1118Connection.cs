@@ -1,6 +1,6 @@
-﻿using coffee_roaster.Enums;
+﻿using CoffeeRoaster.Enums;
 
-namespace coffee_roaster
+namespace CoffeeRoaster
 {
     public interface ITi430BoostAds1118Connection
     {

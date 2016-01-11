@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace coffee_roaster.Enums
+namespace CoffeeRoaster.Enums
 {
     public enum Ads1118Mode : uint
     {
