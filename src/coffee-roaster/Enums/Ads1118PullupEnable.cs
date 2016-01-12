@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace CoffeeRoaster.Enums
 {
-    public enum Ads1118Mode : uint
+    public enum Ads1118PullupEnable
     {
-        //InternalSensor = 0x00000010,
-        InternalSensor = 0x01000000,
-        ExternalSignal = 0
+        PullupEnabled,
+        PullupDisabled
     }
 }

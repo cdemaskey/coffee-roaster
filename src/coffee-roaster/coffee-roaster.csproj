@@ -58,8 +58,13 @@
     <Reference Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Enums\Ads1118ConnectionChannel.cs" />
-    <Compile Include="Enums\Ads1118Mode.cs" />
+    <Compile Include="Enums\Ads1118DataRate.cs" />
+    <Compile Include="Enums\Ads1118DeviceOperatingMode.cs" />
+    <Compile Include="Enums\Ads1118InputMultiplexer.cs" />
+    <Compile Include="Enums\Ads1118ProgrammableGainAmplifier.cs" />
+    <Compile Include="Enums\Ads1118PullupEnable.cs" />
+    <Compile Include="Enums\Ads1118SingleShot.cs" />
+    <Compile Include="Enums\Ads1118TemperatureSensorMode.cs" />
     <Compile Include="Enums\LcdCommand.cs" />
     <Compile Include="ITi430BoostAds1118Connection.cs" />
     <Compile Include="Enums\LcdLine.cs" />

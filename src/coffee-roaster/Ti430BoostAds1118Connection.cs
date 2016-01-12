@@ -30,8 +30,20 @@ namespace CoffeeRoaster
         private readonly IOutputBinaryPin lcdRegisterSelectGpio; // LCD Register Select Signal. RS=0: instruction; RS=1: data
         private readonly IOutputBinaryPin lcdResetGpio;
 
+        private readonly Ads1118SingleShot singleShot;
+        private readonly Ads1118ProgrammableGainAmplifier pga;
+        private readonly Ads1118DeviceOperatingMode deviceOperatingMode;
+        private readonly Ads1118DataRate dataRate;
+        private readonly Ads1118PullupEnable pullupEnabled;
+
         public Ti430BoostAds1118Connection(INativeSpiConnection spi0, INativeSpiConnection spi1, IOutputBinaryPin lcdRegisterSelectGpio, IOutputBinaryPin lcdResetGpio)
         {
+            this.singleShot = Ads1118SingleShot.SingleShot;
+            this.pga = Ads1118ProgrammableGainAmplifier.TwoFiveSix;
+            this.deviceOperatingMode = Ads1118DeviceOperatingMode.PowerDownSingleShotMode;
+            this.dataRate = Ads1118DataRate.OneTwoEight;
+            this.pullupEnabled = Ads1118PullupEnable.PullupEnabled;
+
             this.spi0 = spi0;
             this.spi1 = spi1;
             this.lcdRegisterSelectGpio = lcdRegisterSelectGpio;
@@ -135,21 +147,21 @@ namespace CoffeeRoaster
 
         public double GetMeasurement()
         {
-            thermTransact(Ads1118Mode.InternalSensor, Ads1118ConnectionChannel.Channel0); // start internal sensor measurement
+            ThermTransact(Ads1118TemperatureSensorMode.InternalSensor, Ads1118InputMultiplexer.Ain0Ain1); // start internal sensor measurement
             DelayMicroSeconds(10);
-            int localData = thermTransact(Ads1118Mode.ExternalSignal, Ads1118ConnectionChannel.Channel0); // read internal sensor measurement and start external sensor measurement
+            int localData = ThermTransact(Ads1118TemperatureSensorMode.ExternalSignal, Ads1118InputMultiplexer.Ain0Ain1); // read internal sensor measurement and start external sensor measurement
             Console.WriteLine("Internal Sensor Measures: {0}", localData);
             DelayMicroSeconds(10);
-            int result = thermTransact(Ads1118Mode.ExternalSignal, Ads1118ConnectionChannel.Channel0); // read external sensor measurement and restart external sensor measurement
+            int result = ThermTransact(Ads1118TemperatureSensorMode.ExternalSignal, Ads1118InputMultiplexer.Ain0Ain1); // read external sensor measurement and restart external sensor measurement
             Console.WriteLine("External Sensor Measures: {0}", result);
 
-            int localComp = localCompensation(localData);
+            int localComp = LocalCompensation(localData);
             Console.WriteLine("Local Compensation: {0}", localComp);
 
             result = result + localComp;
             Console.WriteLine("External Sensor + Local Compensation: {0}", result);
             //result = result & 0xffff;
-            result = adcCode2Temp(result);
+            result = AdcCode2Temp(result);
 
             double resultD = Convert.ToDouble(result) / 10;
 
@@ -246,7 +258,7 @@ namespace CoffeeRoaster
         //    return result;
         //}
 
-        public int localCompensation(int localCode)
+        public int LocalCompensation(int localCode)
         {
             Console.WriteLine("localCompensation: localCode = {0}", localCode);
 
@@ -311,7 +323,7 @@ namespace CoffeeRoaster
             return comp;
         }
 
-        public int adcCode2Temp(int code)
+        public int AdcCode2Temp(int code)
         {
             Console.WriteLine("adcCode2Temp : code = {0}", code);
 
@@ -416,31 +428,16 @@ namespace CoffeeRoaster
             return t;
         }
 
-        public int thermTransact(Ads1118Mode mode, Ads1118ConnectionChannel channel)
+        public int ThermTransact(Ads1118TemperatureSensorMode mode, Ads1118InputMultiplexer channel)
         {
             int ret;
 
-            using (var transferBuffer = this.spi1.CreateTransferBuffer(8, SpiTransferMode.ReadWrite))
+            using (var transferBuffer = this.spi1.CreateTransferBuffer(4, SpiTransferMode.ReadWrite))
             {
-                uint tmp = Convert.ToUInt32(channel) + Convert.ToUInt32(mode);
-                Console.WriteLine("Channel + Mode = {0} Hex: {1}", tmp, tmp.ToString("x"));
-                byte[] tmpBytes = BitConverter.GetBytes(tmp);
+                var config = this.GetConfiguration(mode, channel);
 
-                Console.Write("tmpBytes: [");
-                foreach (var oneTmpByte in tmpBytes)
-                {
-                    Console.Write("{0} ", oneTmpByte.ToString("x"));
-                }
-
-                Console.WriteLine("]");
-
-                transferBuffer.Tx.Copy(tmpBytes, 0, 0, tmpBytes.Length);
-                transferBuffer.Tx.Copy(tmpBytes, 0, tmpBytes.Length, tmpBytes.Length);
-
-                //transferBuffer.Tx[0] = Convert.ToByte(((tmp >> 8) & 0xff) | 0x80);
-                //transferBuffer.Tx[1] = Convert.ToByte(tmp & 0xff);
-                //transferBuffer.Tx[2] = transferBuffer.Tx[0];
-                //transferBuffer.Tx[3] = transferBuffer.Tx[1];
+                transferBuffer.Tx.Copy(config, 0, 0, 2);
+                transferBuffer.Tx.Copy(config, 0, 2, 2);
 
                 ret = this.spi1.Transfer(transferBuffer);
 
@@ -464,52 +461,6 @@ namespace CoffeeRoaster
                 }
 
                 Console.WriteLine("]");
-
-                long LongValue = 0;
-
-                if (rxBytes.Length == 8)
-                {
-                    LongValue = BitConverter.ToInt64(rxBytes, 0);
-                }
-                else if (rxBytes.Length == 4)
-                {
-                    LongValue = BitConverter.ToInt32(rxBytes, 0);
-                }
-                else if (rxBytes.Length == 2)
-                {
-                    LongValue = BitConverter.ToInt16(rxBytes, 0);
-                }
-                else
-                {
-                    Console.WriteLine("Something is worng! rxBytes is not 2, 4, or 8 bytes long!");
-                    Environment.Exit(-1);
-                }
-
-                Console.WriteLine("Long Value: {0} Hex: {1}", LongValue, LongValue.ToString("x"));
-
-                //Console.WriteLine("first 16 bits [{0} {1}]", rxBytes[0].ToString("x"), rxBytes[1].ToString("x"));
-
-                //int first16bits = BitConverter.ToInt16(rxBytes, 0);
-
-                //Console.WriteLine("First 16 Bits Converted to int: {0} and Hex: {1}", first16bits, first16bits.ToString("x"));
-
-                //int shifted8bitsleft = first16bits << 8;
-
-                //Console.WriteLine("First 16 Bits Shifted : {0} and Hex: {1}", shifted8bitsleft, shifted8bitsleft.ToString("x"));
-
-                //transferBuffer.Rx.Copy(2, rxBytes, 0, 2);
-
-                //Console.WriteLine("second 16 bits [{0} {1}]", rxBytes[0].ToString("x"), rxBytes[1].ToString("x"));
-
-                //int second16bits = BitConverter.ToInt16(rxBytes, 0);
-
-                //Console.WriteLine("second 16 Bits Converted to int: {0} and Hex: {1}", second16bits, second16bits.ToString("x"));
-
-                //int bitwiseOr = shifted8bitsleft | second16bits;
-
-                //Console.WriteLine("bitwise or between shifted bits and second bits: {0} and Hex: {1}", bitwiseOr, bitwiseOr.ToString("x"));
-
-                //ret = bitwiseOr;
             }
 
             Console.WriteLine("ThermTransact return : {0}", ret);
@@ -532,6 +483,70 @@ namespace CoffeeRoaster
                 this.lcdRegisterSelectGpio?.Dispose();
                 this.lcdResetGpio?.Dispose();
             }
+        }
+
+        public byte[] GetConfiguration(Ads1118TemperatureSensorMode mode, Ads1118InputMultiplexer channel)
+        {
+            var config = new byte[2];
+
+            switch(this.singleShot)
+            {
+                case Ads1118SingleShot.NoEffect:
+                    config[0] = 0;
+                    break;
+                case Ads1118SingleShot.SingleShot:
+                default:
+                    config[0] = 1;
+                    break;
+            }
+
+            switch(channel)
+            {
+                case Ads1118InputMultiplexer.Ain0Ain1:
+                default:
+                    config[1] = 0;
+                    config[2] = 0;
+                    config[3] = 0;
+                    break;
+                case Ads1118InputMultiplexer.Ain0Ain3:
+                    config[1] = 0;
+                    config[2] = 0;
+                    config[3] = 1;
+                    break;
+                case Ads1118InputMultiplexer.Ain1Ain3:
+                    config[1] = 0;
+                    config[2] = 1;
+                    config[3] = 0;
+                    break;
+                case Ads1118InputMultiplexer.Ain2Ain3:
+                    config[1] = 0;
+                    config[2] = 1;
+                    config[3] = 1;
+                    break;
+                case Ads1118InputMultiplexer.Ain0Gnd:
+                    config[1] = 1;
+                    config[2] = 0;
+                    config[3] = 0;
+                    break;
+                case Ads1118InputMultiplexer.Ain1Gnd:
+                    config[1] = 1;
+                    config[2] = 0;
+                    config[3] = 1;
+                    break;
+                case Ads1118InputMultiplexer.Ain2Gnd:
+                    config[1] = 1;
+                    config[2] = 1;
+                    config[3] = 0;
+                    break;
+                case Ads1118InputMultiplexer.Ain3Gnd:
+                    config[1] = 1;
+                    config[2] = 1;
+                    config[3] = 1;
+                    break;
+
+            }
+
+            throw new NotImplementedException();
         }
     }
 }
