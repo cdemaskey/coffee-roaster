@@ -546,7 +546,7 @@ namespace CoffeeRoaster
 
             }
 
-            throw new NotImplementedException();
+            return config;
         }
     }
 }
