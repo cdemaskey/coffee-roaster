@@ -42,7 +42,6 @@
  * P2_7  SOMI     21    MISO
  ************************************************************************************************/
 
-
  // include files
 #include <stdio.h>
 #include <errno.h>
@@ -59,15 +58,15 @@
 #include <time.h>
 
 // definitions
-#define DBG_PRINT 0
+#define DBG_PRINT 1
 #define BCM2708_PERI_BASE        0x20000000
 #define GPIO_BASE                (BCM2708_PERI_BASE + 0x200000) /* GPIO controller */
 #define PAGE_SIZE (4*1024)
 #define BLOCK_SIZE (4*1024)
 
-#define ADS1118_TS			   (0x0010)    
+#define ADS1118_TS			   (0x0010)
 #define ADS1118_PULLUP     	   (0x0008)
-#define ADS1118_NOP     	   (0x0002)  
+#define ADS1118_NOP     	   (0x0002)
 #define ADS1118_CNVRDY     	   (0x0001)
 //Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
 #define ADSCON_CH0		(0x8B8A)
@@ -119,10 +118,8 @@ int local_comp;
 
 // function prototypes
 
-
 // functions
-int
-delay_ms(unsigned int msec)
+int delay_ms(unsigned int msec)
 {
 	int ret;
 	struct timespec a;
@@ -302,13 +299,12 @@ void lcd_display_string(unsigned char line_num, char *ptr)
 	{
 		lcd_writedata(*ptr++);
 	}
-
 }
 
 // initialize and clear the display
 void lcd_init(void)
 {
-	GPIO_SET = 1 << LCD_RS_GPIO;
+	GPIO_SET = 1 << LCD_RS_GPIO; 
 	lcd_writecom(0x30);	//wake up
 	lcd_writecom(0x39);	//function set
 	lcd_writecom(0x14);	//internal osc frequency
@@ -340,7 +336,9 @@ int therm_transact(void)
 	spi.rx_buf = (unsigned long)rxbuf;
 
 	if (DBG_PRINT)
+	{
 		printf("sending [%02x %02x %02x %02x]. ", txbuf[0], txbuf[1], txbuf[2], txbuf[3]);
+	}
 
 	ret = ioctl(ads_fd, SPI_IOC_MESSAGE(1), &spi);
 	if (ret < 0)
@@ -350,7 +348,9 @@ int therm_transact(void)
 	}
 
 	if (DBG_PRINT)
-		printf("received [%02x %02x]\n", rxbuf[0], rxbuf[1]);
+	{
+		printf("received [%02x %02x %02x %02x]\n", rxbuf[0], rxbuf[1], rxbuf[2], rxbuf[3]);
+	}
 	ret = rxbuf[0];
 	ret = ret << 8;
 	ret = ret | rxbuf[1];
@@ -569,23 +569,30 @@ int adc_code2temp(int code)	// transform ADC code for far-end to temperature.
 *******************************************************************************/
 void ads_config(unsigned int mode, unsigned int chan)
 {
-
 	unsigned int tmp;
 	int ret;
 
 	if (chan)
 	{
 		if (mode == EXTERNAL_SIGNAL)		// Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
+		{
 			tmp = ADSCON_CH1;
+		}
 		else
+		{
 			tmp = ADSCON_CH1 + ADS1118_TS;// internal temperature sensor mode.DR=8sps, PULLUP on DOUT
+		}
 	}
 	else
 	{
 		if (mode == EXTERNAL_SIGNAL)		// Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
+		{
 			tmp = ADSCON_CH0;
+		}
 		else
+		{
 			tmp = ADSCON_CH0 + ADS1118_TS;// internal temperature sensor mode.DR=8sps, PULLUP on DOUT
+		}
 	}
 
 	txbuf[0] = (unsigned char)((tmp >> 8) & 0xff);
@@ -610,18 +617,25 @@ int ads_read(unsigned int mode, unsigned int chan)
 	if (chan)
 	{
 		if (mode == EXTERNAL_SIGNAL)		// Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
+		{
 			tmp = ADSCON_CH1;
+		}
 		else
+		{
 			tmp = ADSCON_CH1 + ADS1118_TS;// internal temperature sensor mode.DR=8sps, PULLUP on DOUT
+		}
 	}
 	else
 	{
 		if (mode == EXTERNAL_SIGNAL)		// Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
+		{
 			tmp = ADSCON_CH0;
+		}
 		else
+		{
 			tmp = ADSCON_CH0 + ADS1118_TS;// internal temperature sensor mode.DR=8sps, PULLUP on DOUT
+		}
 	}
-
 
 	txbuf[0] = (unsigned char)((tmp >> 8) & 0xff);
 	txbuf[1] = (unsigned char)(tmp & 0xff);
@@ -914,7 +928,6 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-
 	lcd_init();
 	lcd_clear();					// LCD clear
 	lcd_display_string(0, "Hello");	// display "ADS1118"
@@ -923,4 +936,3 @@ int main(int argc, char* argv[])
 
 	return(0);
 }
-
