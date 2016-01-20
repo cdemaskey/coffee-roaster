@@ -2,6 +2,7 @@
 using Raspberry.IO;
 using Raspberry.IO.SerialPeripheralInterface;
 using System;
+using System.Threading;
 
 /**********************************************************************************************
  * Connections:
@@ -53,10 +54,11 @@ namespace CoffeeRoaster
             this.lcdResetGpio.Write(true);
         }
 
-        public void DelayMicroSeconds(int microSeconds)
+        public void DelayMicroSeconds(int milliSeconds)
         {
-            var microsecondTimeSpan = Raspberry.Timers.TimeSpanUtility.FromMicroseconds(Convert.ToDouble(microSeconds));
-            Raspberry.Timers.Timer.Sleep(microsecondTimeSpan);
+            Thread.Sleep(milliSeconds);
+            //var microsecondTimeSpan = TimeSpanUtility.FromMicroseconds(Convert.ToDouble(microSeconds));
+            //Raspberry.Timers.Timer.Sleep(microsecondTimeSpan);
         }
 
         public void InitializeLcd()
@@ -148,19 +150,21 @@ namespace CoffeeRoaster
         public double GetMeasurement()
         {
             ThermTransact(Ads1118TemperatureSensorMode.InternalSensor, Ads1118InputMultiplexer.Ain0Ain1); // start internal sensor measurement
+
             DelayMicroSeconds(10);
+
             int localData = ThermTransact(Ads1118TemperatureSensorMode.ExternalSignal, Ads1118InputMultiplexer.Ain0Ain1); // read internal sensor measurement and start external sensor measurement
-            Console.WriteLine("Internal Sensor Measures: {0}", localData);
+
             DelayMicroSeconds(10);
+
             int result = ThermTransact(Ads1118TemperatureSensorMode.ExternalSignal, Ads1118InputMultiplexer.Ain0Ain1); // read external sensor measurement and restart external sensor measurement
-            Console.WriteLine("External Sensor Measures: {0}", result);
 
             int localComp = LocalCompensation(localData);
-            Console.WriteLine("Local Compensation: {0}", localComp);
 
             result = result + localComp;
-            Console.WriteLine("External Sensor + Local Compensation: {0}", result);
-            //result = result & 0xffff;
+
+            result = result & 0xffff;
+
             result = AdcCode2Temp(result);
 
             double resultD = Convert.ToDouble(result) / 10;
@@ -168,100 +172,8 @@ namespace CoffeeRoaster
             return resultD;
         }
 
-        //public void adsConfig(AdsMode mode, AdsConnectionChannel channel)
-        //{
-        //    uint tmp;
-        //    int ret;
-
-        //    //switch (channel)
-        //    //{
-        //    //    case AdsConnectionChannel.Channel1:
-        //    //        switch (mode)
-        //    //        {
-        //    //            case AdsMode.ExternalSignal: // Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
-        //    //                tmp = ADSCON_CH1;
-        //    //                break;
-        //    //            case AdsMode.InternalSensor:
-        //    //            default:
-        //    //                tmp = ASDCON_CH1 + ADS1118_TS; // internal temperature sensor mode.DR=8sps, PULLUP on DOUT
-        //    //                break;
-        //    //        }
-
-        //    //        break;
-        //    //    case AdsConnectionChannel.Channel0:
-        //    //    default:
-        //    //        switch (mode)
-        //    //        {
-        //    //            case AdsMode.ExternalSignal: // Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
-        //    //                tmp = ADSCON_CH0;
-        //    //                break;
-        //    //            case AdsMode.InternalSensor:
-        //    //            default:
-        //    //                tmp = ADSCON_CH0 + ADS1118_TS; // internal temperature sensor mode.DR=8sps, PULLUP on DOUT
-        //    //                break;
-        //    //        }
-
-        //    //        break;
-        //    //}
-
-        //    tmp = Convert.ToUInt32(channel) + Convert.ToUInt32(mode);
-
-        //    //txbuf[0] = (unsigned char)((tmp >> 8) & 0xff);
-        //    //txbuf[1] = (unsigned char)(tmp & 0xff);
-
-        //    ret = thermTransact();
-        //}
-
-        //public int adsRead(AdsMode mode, AdsConnectionChannel channel)
-        //{
-        //    uint tmp;
-        //    int result;
-
-        //    //switch (channel)
-        //    //{
-        //    //    case AdsConnectionChannel.Channel1:
-        //    //        switch (mode)
-        //    //        {
-        //    //            case AdsMode.ExternalSignal: // Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
-        //    //                tmp = ADSCON_CH1;
-        //    //                break;
-        //    //            case AdsMode.InternalSensor:
-        //    //            default:
-        //    //                tmp = ASDCON_CH1 + ADS1118_TS; // internal temperature sensor mode.DR=8sps, PULLUP on DOUT
-        //    //                break;
-        //    //        }
-
-        //    //        break;
-        //    //    case AdsConnectionChannel.Channel0:
-        //    //    default:
-        //    //        switch (mode)
-        //    //        {
-        //    //            case AdsMode.ExternalSignal: // Set the configuration to AIN0/AIN1, FS=+/-0.256, SS, DR=128sps, PULLUP on DOUT
-        //    //                tmp = ADSCON_CH0;
-        //    //                break;
-        //    //            case AdsMode.InternalSensor:
-        //    //            default:
-        //    //                tmp = ADSCON_CH0 + ADS1118_TS; // internal temperature sensor mode.DR=8sps, PULLUP on DOUT
-        //    //                break;
-        //    //        }
-
-        //    //        break;
-        //    //}
-
-        //    tmp = Convert.ToUInt32(channel) + Convert.ToUInt32(mode);
-
-        //    //txbuf[0] = (unsigned char)((tmp >> 8) & 0xff);
-        //    //txbuf[1] = (unsigned char)(tmp & 0xff);
-
-        //    result = thermTransact();
-
-        //    return result;
-        //}
-
         public int LocalCompensation(int localCode)
         {
-            Console.WriteLine("localCompensation: localCode = {0}", localCode);
-
             float tmp;
             float local_temp;
             int comp;
@@ -275,42 +187,42 @@ namespace CoffeeRoaster
             }
             else if (local_temp > 5 && local_temp <= 10)    //5~10
             {
-                tmp = (0x001A * (local_temp - 5)) / 5 + 0x0019;
+                tmp = ((0x001A * (local_temp - 5)) / 5) + 0x0019;
                 comp = Convert.ToInt32(tmp);
             }
             else if (local_temp > 10 && local_temp <= 20)   //10~20
             {
-                tmp = (0x0033 * (local_temp - 10)) / 10 + 0x0033;
+                tmp = ((0x0033 * (local_temp - 10)) / 10) + 0x0033;
                 comp = Convert.ToInt32(tmp);
             }
             else if (local_temp > 20 && local_temp <= 30)   //20~30
             {
-                tmp = (0x0034 * (local_temp - 20)) / 10 + 0x0066;
+                tmp = ((0x0034 * (local_temp - 20)) / 10) + 0x0066;
                 comp = Convert.ToInt32(tmp);
             }
             else if (local_temp > 30 && local_temp <= 40)   //30~40
             {
-                tmp = (0x0034 * (local_temp - 30)) / 10 + 0x009A;
+                tmp = ((0x0034 * (local_temp - 30)) / 10) + 0x009A;
                 comp = Convert.ToInt32(tmp);
             }
             else if (local_temp > 40 && local_temp <= 50)   //40~50
             {
-                tmp = (0x0035 * (local_temp - 40)) / 10 + 0x00CE;
+                tmp = ((0x0035 * (local_temp - 40)) / 10) + 0x00CE;
                 comp = Convert.ToInt32(tmp);
             }
             else if (local_temp > 50 && local_temp <= 60)   //50~60
             {
-                tmp = (0x0035 * (local_temp - 50)) / 10 + 0x0103;
+                tmp = ((0x0035 * (local_temp - 50)) / 10) + 0x0103;
                 comp = Convert.ToInt32(tmp);
             }
             else if (local_temp > 60 && local_temp <= 80)   //60~80
             {
-                tmp = (0x006A * (local_temp - 60)) / 20 + 0x0138;
+                tmp = ((0x006A * (local_temp - 60)) / 20) + 0x0138;
                 comp = Convert.ToInt32(tmp);
             }
             else if (local_temp > 80 && local_temp <= 125)//80~125
             {
-                tmp = (0x00EE * (local_temp - 80)) / 45 + 0x01A2;
+                tmp = ((0x00EE * (local_temp - 80)) / 45) + 0x01A2;
                 comp = Convert.ToInt32(tmp);
             }
             else
@@ -318,15 +230,11 @@ namespace CoffeeRoaster
                 comp = 0;
             }
 
-            Console.WriteLine("localCompensation : return = {0}", comp);
-
             return comp;
         }
 
         public int AdcCode2Temp(int code)
         {
-            Console.WriteLine("adcCode2Temp : code = {0}", code);
-
             float temp;
             int t;
 
@@ -334,11 +242,11 @@ namespace CoffeeRoaster
 
             if (code > 0xFF6C && code <= 0xFFB5)            //-30~-15
             {
-                temp = (float)(15 * (temp - 0xFF6C)) / 0x0049 - 30.0f;
+                temp = ((float)(15 * (temp - 0xFF6C)) / 0x0049) - 30.0f;
             }
             else if (code > 0xFFB5 && code <= 0xFFFF)   //-15~0
             {
-                temp = (float)(15 * (temp - 0xFFB5)) / 0x004B - 15.0f;
+                temp = ((float)(15 * (temp - 0xFFB5)) / 0x004B) - 15.0f;
             }
             else if (code >= 0 && code <= 0x0019)           //0~5
             {
@@ -346,75 +254,75 @@ namespace CoffeeRoaster
             }
             else if (code > 0x0019 && code <= 0x0033)       //5~10
             {
-                temp = (float)(5 * (temp - 0x0019)) / 0x001A + 5.0f;
+                temp = ((float)(5 * (temp - 0x0019)) / 0x001A) + 5.0f;
             }
             else if (code > 0x0033 && code <= 0x0066)       //10~20
             {
-                temp = (float)(10 * (temp - 0x0033)) / 0x0033 + 10.0f;
+                temp = ((float)(10 * (temp - 0x0033)) / 0x0033) + 10.0f;
             }
             else if (code > 0x0066 && code <= 0x009A)   //20~30
             {
-                temp = (float)(10 * (temp - 0x0066)) / 0x0034 + 20.0f;
+                temp = ((float)(10 * (temp - 0x0066)) / 0x0034) + 20.0f;
             }
             else if (code > 0x009A && code <= 0x00CE)   //30~40
             {
-                temp = (float)(10 * (temp - 0x009A)) / 0x0034 + 30.0f;
+                temp = ((float)(10 * (temp - 0x009A)) / 0x0034) + 30.0f;
             }
             else if (code > 0x00CE && code <= 0x0103)   //40~50
             {
-                temp = (float)(10 * (temp - 0x00CE)) / 0x0035 + 40.0f;
+                temp = ((float)(10 * (temp - 0x00CE)) / 0x0035) + 40.0f;
             }
             else if (code > 0x0103 && code <= 0x0138)   //50~60
             {
-                temp = (float)(10 * (temp - 0x0103)) / 0x0035 + 50.0f;
+                temp = ((float)(10 * (temp - 0x0103)) / 0x0035) + 50.0f;
             }
             else if (code > 0x0138 && code <= 0x01A2)   //60~80
             {
-                temp = (float)(20 * (temp - 0x0138)) / 0x006A + 60.0f;
+                temp = ((float)(20 * (temp - 0x0138)) / 0x006A) + 60.0f;
             }
             else if (code > 0x01A2 && code <= 0x020C)   //80~100
             {
-                temp = (float)((temp - 0x01A2) * 20) / 0x06A + 80.0f;
+                temp = ((float)((temp - 0x01A2) * 20) / 0x06A) + 80.0f;
             }
             else if (code > 0x020C && code <= 0x02DE)   //100~140
             {
-                temp = (float)((temp - 0x020C) * 40) / 0x0D2 + 100.0f;
+                temp = ((float)((temp - 0x020C) * 40) / 0x0D2) + 100.0f;
             }
             else if (code > 0x02DE && code <= 0x03AC)   //140~180
             {
-                temp = (float)((temp - 0x02DE) * 40) / 0x00CE + 140.0f;
+                temp = ((float)((temp - 0x02DE) * 40) / 0x00CE) + 140.0f;
             }
             else if (code > 0x03AC && code <= 0x0478)   //180~220
             {
-                temp = (float)((temp - 0x03AB) * 40) / 0x00CD + 180.0f;
+                temp = ((float)((temp - 0x03AB) * 40) / 0x00CD) + 180.0f;
             }
             else if (code > 0x0478 && code <= 0x0548)   //220~260
             {
-                temp = (float)((temp - 0x0478) * 40) / 0x00D0 + 220.0f;
+                temp = ((float)((temp - 0x0478) * 40) / 0x00D0) + 220.0f;
             }
             else if (code > 0x0548 && code <= 0x061B)   //260~300
             {
-                temp = (float)((temp - 0x0548) * 40) / 0x00D3 + 260.0f;
+                temp = ((float)((temp - 0x0548) * 40) / 0x00D3) + 260.0f;
             }
             else if (code > 0x061B && code <= 0x06F2)   //300~340
             {
-                temp = (float)((temp - 0x061B) * 40) / 0x00D7 + 300.0f;
+                temp = ((float)((temp - 0x061B) * 40) / 0x00D7) + 300.0f;
             }
             else if (code > 0x06F2 && code <= 0x07C7)   //340~400
             {
-                temp = (float)((temp - 0x06F2) * 40) / 0x00D5 + 340.0f;
+                temp = ((float)((temp - 0x06F2) * 40) / 0x00D5) + 340.0f;
             }
             else if (code > 0x07C7 && code <= 0x089F)   //380~420
             {
-                temp = (float)((temp - 0x07C7) * 40) / 0x00D8 + 380.0f;
+                temp = ((float)((temp - 0x07C7) * 40) / 0x00D8) + 380.0f;
             }
             else if (code > 0x089F && code <= 0x0978)   //420~460
             {
-                temp = (float)((temp - 0x089F) * 40) / 0x00D9 + 420.0f;
+                temp = ((float)((temp - 0x089F) * 40) / 0x00D9) + 420.0f;
             }
             else if (code > 0x0978 && code <= 0x0A52)   //460~500
             {
-                temp = (float)((temp - 0x0978) * 40) / 0x00DA + 460.0f;
+                temp = ((float)((temp - 0x0978) * 40) / 0x00DA) + 460.0f;
             }
             else
             {
@@ -422,8 +330,6 @@ namespace CoffeeRoaster
             }
 
             t = (int)(10 * temp);
-
-            Console.WriteLine("adcCode2Temp : return = {0}", t);
 
             return t;
         }
@@ -434,10 +340,27 @@ namespace CoffeeRoaster
 
             using (var transferBuffer = this.spi1.CreateTransferBuffer(4, SpiTransferMode.ReadWrite))
             {
-                var config = this.GetConfiguration(mode, channel);
+                if (mode == Ads1118TemperatureSensorMode.ExternalSignal && channel == Ads1118InputMultiplexer.Ain0Ain1)
+                {
+                    transferBuffer.Tx[0] = Convert.ToByte(0x8b);
+                    transferBuffer.Tx[1] = Convert.ToByte(0x8a);
+                    transferBuffer.Tx[2] = Convert.ToByte(0x8b);
+                    transferBuffer.Tx[3] = Convert.ToByte(0x8a);
+                }
+                else if (mode == Ads1118TemperatureSensorMode.InternalSensor && channel == Ads1118InputMultiplexer.Ain0Ain1)
+                {
+                    transferBuffer.Tx[0] = Convert.ToByte(0x8b);
+                    transferBuffer.Tx[1] = Convert.ToByte(0x9a);
+                    transferBuffer.Tx[2] = Convert.ToByte(0x8b);
+                    transferBuffer.Tx[3] = Convert.ToByte(0x9a);
+                }
 
-                transferBuffer.Tx.Copy(config, 0, 0, 2);
-                transferBuffer.Tx.Copy(config, 0, 2, 2);
+                Console.Write("sending [{0} {1} {2} {3}]. ", transferBuffer.Tx[0].ToString("x2"), transferBuffer.Tx[1].ToString("x2"), transferBuffer.Tx[2].ToString("x2"), transferBuffer.Tx[3].ToString("x2"));
+
+                transferBuffer.Delay = 0;
+                transferBuffer.Speed = SpiSpeed;
+                transferBuffer.BitsPerWord = BitsPerWord;
+                transferBuffer.ChipSelectChange = false;
 
                 ret = this.spi1.Transfer(transferBuffer);
 
@@ -449,21 +372,12 @@ namespace CoffeeRoaster
 
                 ret = 0;
 
-                Console.WriteLine("Rx Length: {0}", transferBuffer.Rx.Length);
+                Console.WriteLine("received [{0} {1} {2} {3}]", transferBuffer.Rx[0].ToString("x2"), transferBuffer.Rx[1].ToString("x2"), transferBuffer.Rx[2].ToString("x2"), transferBuffer.Rx[3].ToString("x2"));
 
-                var rxBytes = new byte[transferBuffer.Length];
-                transferBuffer.Rx.Copy(0, rxBytes, 0, transferBuffer.Length);
-
-                Console.Write("Rx Bytes: [");
-                foreach (var oneRxByte in rxBytes)
-                {
-                    Console.Write("{0} ", oneRxByte.ToString("x"));
-                }
-
-                Console.WriteLine("]");
+                ret = transferBuffer.Rx[0];
+                ret = ret << 8;
+                ret = ret | transferBuffer.Rx[1];
             }
-
-            Console.WriteLine("ThermTransact return : {0}", ret);
 
             return ret;
         }
@@ -489,18 +403,19 @@ namespace CoffeeRoaster
         {
             var config = new byte[2];
 
-            switch(this.singleShot)
+            switch (this.singleShot)
             {
                 case Ads1118SingleShot.NoEffect:
                     config[0] = 0;
                     break;
+
                 case Ads1118SingleShot.SingleShot:
                 default:
                     config[0] = 1;
                     break;
             }
 
-            switch(channel)
+            switch (channel)
             {
                 case Ads1118InputMultiplexer.Ain0Ain1:
                 default:
@@ -508,42 +423,48 @@ namespace CoffeeRoaster
                     config[2] = 0;
                     config[3] = 0;
                     break;
+
                 case Ads1118InputMultiplexer.Ain0Ain3:
                     config[1] = 0;
                     config[2] = 0;
                     config[3] = 1;
                     break;
+
                 case Ads1118InputMultiplexer.Ain1Ain3:
                     config[1] = 0;
                     config[2] = 1;
                     config[3] = 0;
                     break;
+
                 case Ads1118InputMultiplexer.Ain2Ain3:
                     config[1] = 0;
                     config[2] = 1;
                     config[3] = 1;
                     break;
+
                 case Ads1118InputMultiplexer.Ain0Gnd:
                     config[1] = 1;
                     config[2] = 0;
                     config[3] = 0;
                     break;
+
                 case Ads1118InputMultiplexer.Ain1Gnd:
                     config[1] = 1;
                     config[2] = 0;
                     config[3] = 1;
                     break;
+
                 case Ads1118InputMultiplexer.Ain2Gnd:
                     config[1] = 1;
                     config[2] = 1;
                     config[3] = 0;
                     break;
+
                 case Ads1118InputMultiplexer.Ain3Gnd:
                     config[1] = 1;
                     config[2] = 1;
                     config[3] = 1;
                     break;
-
             }
 
             return config;

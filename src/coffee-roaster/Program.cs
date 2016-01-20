@@ -30,7 +30,7 @@ namespace CoffeeRoaster
                 adsSpiSettings.Mode = SpiMode.Mode1;
 
                 var spi0 = new NativeSpiConnection("/dev/spidev0.0", lcdSpiSettings);
-                var spi1 = new NativeSpiConnection("/dev/spidev0.1", lcdSpiSettings);
+                var spi1 = new NativeSpiConnection("/dev/spidev0.1", adsSpiSettings);
 
                 var lcdRegisterSelectGpio = ConnectorPin.P1Pin11;
                 driver.In(lcdRegisterSelectGpio).Read();
@@ -48,7 +48,7 @@ namespace CoffeeRoaster
                     deviceConnection.ClearLcd();
 
                     var temp = deviceConnection.GetMeasurement();
-                    deviceConnection.DisplayStringOnLcd(LcdLine.SecondLine, string.Format("TEMP: {0} F", temp));
+                    deviceConnection.DisplayStringOnLcd(LcdLine.SecondLine, string.Format("TEMP: {0} C", temp));
                 }
             }
             catch (Exception ex)
