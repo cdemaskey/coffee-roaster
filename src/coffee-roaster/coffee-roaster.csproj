@@ -34,6 +34,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+<<<<<<< HEAD:src/coffee-roaster/coffee-roaster.csproj
     <Reference Include="Raspberry.IO, Version=2.3.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Raspberry.IO.SerialPeripheralInterface.2.3.0-alpha1\lib\net40\Raspberry.IO.dll</HintPath>
       <Private>True</Private>
@@ -54,10 +55,13 @@
       <HintPath>..\..\packages\Raspberry.System.2.0.0\lib\net40\Raspberry.System.dll</HintPath>
       <Private>True</Private>
     </Reference>
+=======
+>>>>>>> master:coffee-roaster/coffee-roaster/coffee-roaster.csproj
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
+<<<<<<< HEAD:src/coffee-roaster/coffee-roaster.csproj
     <Compile Include="Enums\Ads1118DataRate.cs" />
     <Compile Include="Enums\Ads1118DeviceOperatingMode.cs" />
     <Compile Include="Enums\Ads1118InputMultiplexer.cs" />
@@ -69,11 +73,15 @@
     <Compile Include="ITi430BoostAds1118Connection.cs" />
     <Compile Include="Enums\LcdLine.cs" />
     <Compile Include="Ti430BoostAds1118Connection.cs" />
+=======
+    <Compile Include="Libc.cs" />
+>>>>>>> master:coffee-roaster/coffee-roaster/coffee-roaster.csproj
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+<<<<<<< HEAD:src/coffee-roaster/coffee-roaster.csproj
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -83,6 +91,9 @@
     <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0-rc3\analyzers\dotnet\cs\Newtonsoft.Json.dll" />
     <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0-rc3\analyzers\dotnet\cs\StyleCop.Analyzers.CodeFixes.dll" />
     <Analyzer Include="..\..\packages\StyleCop.Analyzers.1.0.0-rc3\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
+=======
+    <None Include="therm.c" />
+>>>>>>> master:coffee-roaster/coffee-roaster/coffee-roaster.csproj
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
