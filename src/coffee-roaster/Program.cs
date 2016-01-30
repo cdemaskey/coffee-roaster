@@ -1,4 +1,7 @@
-﻿using CoffeeRoaster.Enums;
+﻿using Akka.Actor;
+using Akka.DI.AutoFac;
+using Autofac;
+using CoffeeRoaster.Enums;
 using Raspberry.IO.GeneralPurpose;
 using Raspberry.IO.SerialPeripheralInterface;
 using System;
@@ -12,6 +15,17 @@ namespace CoffeeRoaster
 
         public static void Main(string[] args)
         {
+            // create container builder
+            var builder = new ContainerBuilder();
+            // register types
+
+            // build container
+            var container = builder.Build();
+            // create Akka.Net actor system
+            var system = ActorSystem.Create("coffee-roaster");
+            // create the Akka.Net Dependency Resolver
+            var propsResolver = new AutoFacDependencyResolver(container, system);
+
             try
             {
                 Console.WriteLine("Starting application");
