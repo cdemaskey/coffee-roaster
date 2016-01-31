@@ -96,6 +96,7 @@
     <Compile Include="Enums\LcdLine.cs" />
     <Compile Include="Messages\DisplayStringOnLcdMessage.cs" />
     <Compile Include="Messages\SetLcdRegisterSelectMessage.cs" />
+    <Compile Include="Messages\TransferLcdCharacterMessage.cs" />
     <Compile Include="Messages\TransferLcdCommandMessage.cs" />
     <Compile Include="Results\OperationResult.cs" />
     <Compile Include="Ti430BoostAds1118Connection.cs" />

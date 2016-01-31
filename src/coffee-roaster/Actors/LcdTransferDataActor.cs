@@ -20,6 +20,13 @@ namespace CoffeeRoaster.Actors
 
                 this.Sender.Tell(new OperationResult(result));
             });
+
+            this.Receive<TransferLcdCharacterMessage>(lcdCharacter =>
+            {
+                var result = this.TransferData(Convert.ToByte(lcdCharacter.Character));
+
+                this.Sender.Tell(new OperationResult(result));
+            });
         }
 
         private bool TransferData(byte data)
