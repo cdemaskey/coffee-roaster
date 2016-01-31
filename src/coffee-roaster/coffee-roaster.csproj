@@ -79,6 +79,11 @@
     <Reference Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\AnalogToDigitalConverterActor.cs" />
+    <Compile Include="Actors\CoffeeRoasterActor.cs" />
+    <Compile Include="Actors\LcdActor.cs" />
+    <Compile Include="Actors\LcdRegisterSelectActor.cs" />
+    <Compile Include="Actors\LcdTransferDataActor.cs" />
     <Compile Include="Enums\Ads1118DataRate.cs" />
     <Compile Include="Enums\Ads1118DeviceOperatingMode.cs" />
     <Compile Include="Enums\Ads1118InputMultiplexer.cs" />
@@ -89,6 +94,10 @@
     <Compile Include="Enums\LcdCommand.cs" />
     <Compile Include="ITi430BoostAds1118Connection.cs" />
     <Compile Include="Enums\LcdLine.cs" />
+    <Compile Include="Messages\DisplayStringOnLcdMessage.cs" />
+    <Compile Include="Messages\SetLcdRegisterSelectMessage.cs" />
+    <Compile Include="Messages\TransferLcdCommandMessage.cs" />
+    <Compile Include="Results\OperationResult.cs" />
     <Compile Include="Ti430BoostAds1118Connection.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
