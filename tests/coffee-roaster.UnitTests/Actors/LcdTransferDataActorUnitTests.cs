@@ -4,6 +4,7 @@ using CoffeeRoaster.Actors;
 using CoffeeRoaster.Enums;
 using CoffeeRoaster.Messages;
 using CoffeeRoaster.Results;
+using CoffeeRoaster.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Raspberry.IO.SerialPeripheralInterface;
@@ -15,13 +16,15 @@ namespace CoffeeRoaster.UnitTests.Actors
     public class LcdTransferDataActorUnitTests : TestKit
     {
         private IActorRef lcdTransferDataActor;
+        private Mock<ILcdSpiService> mockLcdSpiService;
         private Mock<INativeSpiConnection> mockSpi0;
 
         [TestInitialize]
         public void InitializeTest()
         {
             this.mockSpi0 = new Mock<INativeSpiConnection>();
-            this.lcdTransferDataActor = this.Sys.ActorOf(Props.Create(() => new LcdTransferDataActor(this.mockSpi0.Object)));
+            this.mockLcdSpiService = new Mock<ILcdSpiService>();
+            this.lcdTransferDataActor = this.Sys.ActorOf(Props.Create(() => new LcdTransferDataActor(this.mockLcdSpiService.Object)));
         }
 
         [TestMethod]

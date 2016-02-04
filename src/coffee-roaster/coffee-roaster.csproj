@@ -99,6 +99,8 @@
     <Compile Include="Messages\TransferLcdCharacterMessage.cs" />
     <Compile Include="Messages\TransferLcdCommandMessage.cs" />
     <Compile Include="Results\OperationResult.cs" />
+    <Compile Include="Services\ILcdSpiService.cs" />
+    <Compile Include="Services\LcdSpiService.cs" />
     <Compile Include="Ti430BoostAds1118Connection.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
