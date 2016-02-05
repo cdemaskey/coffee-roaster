@@ -17,31 +17,20 @@ namespace CoffeeRoaster.UnitTests.Actors
     {
         private IActorRef lcdTransferDataActor;
         private Mock<ILcdSpiService> mockLcdSpiService;
-        private Mock<INativeSpiConnection> mockSpi0;
 
         [TestInitialize]
         public void InitializeTest()
         {
-            this.mockSpi0 = new Mock<INativeSpiConnection>();
             this.mockLcdSpiService = new Mock<ILcdSpiService>();
             this.lcdTransferDataActor = this.Sys.ActorOf(Props.Create(() => new LcdTransferDataActor(this.mockLcdSpiService.Object)));
         }
 
         [TestMethod]
-        public void TransferLcdCommand_ReturnZero_Test()
+        public void TransferLcdCommand_ReturnTrue_Test()
         {
             // arragne
             var inputCommand = LcdCommand.WakeUp;
-            Mock<ISpiTransferBuffer> mockTransferBuffer = new Mock<ISpiTransferBuffer>();
-
-            this.mockSpi0.Setup(x => x.CreateTransferBuffer(1, SpiTransferMode.ReadWrite)).Returns(mockTransferBuffer.Object);
-
-            mockTransferBuffer.SetupSet(x => x.Tx[0] = Convert.ToByte(inputCommand)).Verifiable();
-            mockTransferBuffer.SetupSet(x => x.Delay = 0).Verifiable();
-            mockTransferBuffer.SetupSet(x => x.ChipSelectChange = false).Verifiable();
-
-            var mockRet = 0;
-            this.mockSpi0.Setup(x => x.Transfer(mockTransferBuffer.Object)).Returns(mockRet);
+            this.mockLcdSpiService.Setup(x => x.TransferLcdCommand(inputCommand)).Returns(true);
 
             // act
             this.lcdTransferDataActor.Tell(new TransferLcdCommandMessage(inputCommand));
@@ -51,26 +40,14 @@ namespace CoffeeRoaster.UnitTests.Actors
             // assert
             var expectedSuccessful = true;
             Assert.AreEqual(expectedSuccessful, actual.Successful);
-
-            mockTransferBuffer.Verify();
-            this.mockSpi0.Verify();
         }
 
         [TestMethod]
-        public void TransfertLcdCharacter_ReturnZero_Test()
+        public void TransfertLcdCharacter_ReturnTrue_Test()
         {
             // arrange
             var inputCharacter = 'a';
-            Mock<ISpiTransferBuffer> mockTransferBuffer = new Mock<ISpiTransferBuffer>();
-
-            this.mockSpi0.Setup(x => x.CreateTransferBuffer(1, SpiTransferMode.ReadWrite)).Returns(mockTransferBuffer.Object);
-
-            mockTransferBuffer.SetupSet(x => x.Tx[0] = Convert.ToByte(inputCharacter)).Verifiable();
-            mockTransferBuffer.SetupSet(x => x.Delay = 0).Verifiable();
-            mockTransferBuffer.SetupSet(x => x.ChipSelectChange = false).Verifiable();
-
-            var mockRet = 0;
-            this.mockSpi0.Setup(x => x.Transfer(mockTransferBuffer.Object)).Returns(mockRet);
+            this.mockLcdSpiService.Setup(x => x.TransferLcdCharacter(inputCharacter)).Returns(true);
 
             // act
             this.lcdTransferDataActor.Tell(new TransferLcdCharacterMessage(inputCharacter));
@@ -80,26 +57,14 @@ namespace CoffeeRoaster.UnitTests.Actors
             // assert
             var expectedSuccessful = true;
             Assert.AreEqual(expectedSuccessful, actual.Successful);
-
-            this.mockSpi0.Verify();
-            mockTransferBuffer.Verify();
         }
 
         [TestMethod]
-        public void TransferLcdCommand_ReturnNegOne_Test()
+        public void TransferLcdCommand_ReturnFalse_Test()
         {
             // arragne
             var inputCommand = LcdCommand.WakeUp;
-            Mock<ISpiTransferBuffer> mockTransferBuffer = new Mock<ISpiTransferBuffer>();
-
-            this.mockSpi0.Setup(x => x.CreateTransferBuffer(1, SpiTransferMode.ReadWrite)).Returns(mockTransferBuffer.Object);
-
-            mockTransferBuffer.SetupSet(x => x.Tx[0] = Convert.ToByte(inputCommand)).Verifiable();
-            mockTransferBuffer.SetupSet(x => x.Delay = 0).Verifiable();
-            mockTransferBuffer.SetupSet(x => x.ChipSelectChange = false).Verifiable();
-
-            var mockRet = -1;
-            this.mockSpi0.Setup(x => x.Transfer(mockTransferBuffer.Object)).Returns(mockRet);
+            this.mockLcdSpiService.Setup(x => x.TransferLcdCommand(inputCommand)).Returns(false);
 
             // act
             this.lcdTransferDataActor.Tell(new TransferLcdCommandMessage(inputCommand));
@@ -109,26 +74,14 @@ namespace CoffeeRoaster.UnitTests.Actors
             // assert
             var expectedSuccessful = false;
             Assert.AreEqual(expectedSuccessful, actual.Successful);
-
-            mockTransferBuffer.Verify();
-            this.mockSpi0.Verify();
         }
 
         [TestMethod]
-        public void TransfertLcdCharacter_ReturnNegOne_Test()
+        public void TransfertLcdCharacter_ReturnFalse_Test()
         {
             // arrange
             var inputCharacter = 'a';
-            Mock<ISpiTransferBuffer> mockTransferBuffer = new Mock<ISpiTransferBuffer>();
-
-            this.mockSpi0.Setup(x => x.CreateTransferBuffer(1, SpiTransferMode.ReadWrite)).Returns(mockTransferBuffer.Object);
-
-            mockTransferBuffer.SetupSet(x => x.Tx[0] = Convert.ToByte(inputCharacter)).Verifiable();
-            mockTransferBuffer.SetupSet(x => x.Delay = 0).Verifiable();
-            mockTransferBuffer.SetupSet(x => x.ChipSelectChange = false).Verifiable();
-
-            var mockRet = -1;
-            this.mockSpi0.Setup(x => x.Transfer(mockTransferBuffer.Object)).Returns(mockRet);
+            this.mockLcdSpiService.Setup(x => x.TransferLcdCharacter(inputCharacter)).Returns(false);
 
             // act
             this.lcdTransferDataActor.Tell(new TransferLcdCharacterMessage(inputCharacter));
@@ -138,9 +91,6 @@ namespace CoffeeRoaster.UnitTests.Actors
             // assert
             var expectedSuccessful = false;
             Assert.AreEqual(expectedSuccessful, actual.Successful);
-
-            this.mockSpi0.Verify();
-            mockTransferBuffer.Verify();
         }
     }
 }
