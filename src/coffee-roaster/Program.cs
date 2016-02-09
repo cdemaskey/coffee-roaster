@@ -1,27 +1,38 @@
 ﻿using Akka.Actor;
 using Akka.DI.AutoFac;
 using Autofac;
-using CoffeeRoaster.Actors;
-using CoffeeRoaster.Enums;
 using CoffeeRoaster.Services;
 using Raspberry.IO.GeneralPurpose;
 using Raspberry.IO.SerialPeripheralInterface;
-using System;
-using System.Threading;
 
 namespace CoffeeRoaster
 {
     public class Program
     {
         private const ConnectorPin LcdResetGpio = ConnectorPin.P1Pin16;
+        private const uint MaxSpeed = 125000000;
+        private const int BitsPerWord = 8;
+        private const string SpiDev0 = "/dev/spidev0.0";
+        private const string SpiDev1 = "/dev/spidev0.1";
 
         public static void Main(string[] args)
         {
+            var driver = new MemoryGpioConnectionDriver();
+
             // create container builder
             var builder = new ContainerBuilder();
 
             // register types
-            builder.RegisterType<ILcdSpiService>().As<LcdSpiService>();
+            builder.RegisterInstance<MemoryGpioConnectionDriver>(driver);
+            builder.RegisterType<INativeSpiConnection>().As<NativeSpiConnection>();
+            builder.Register<ILcdSpiService>((c, p) =>
+            {
+                return new LcdSpiService(c.Resolve<INativeSpiConnection>(new NamedParameter("deviceFilePath", SpiDev0), new NamedParameter("settings", new SpiConnectionSettings() { BitsPerWord = BitsPerWord, Delay = 0, MaxSpeed = MaxSpeed, Mode = SpiMode.Mode0 })));
+            });
+            builder.Register<ILcdRegisterSelectService>((c, p) =>
+            {
+                return new LcdRegisterSelectService(c.Resolve<MemoryGpioConnectionDriver>().Out(ConnectorPin.P1Pin11));
+            });
 
             // build container
             var container = builder.Build();

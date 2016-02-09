@@ -1,12 +1,14 @@
-﻿namespace CoffeeRoaster.Messages
+﻿using CoffeeRoaster.Enums;
+
+namespace CoffeeRoaster.Messages
 {
     public class SetLcdRegisterSelectMessage
     {
-        public bool State { get; private set; }
+        public LcdRegisterSelect RegisterSelectState { get; private set; }
 
-        public SetLcdRegisterSelectMessage(bool state)
+        public SetLcdRegisterSelectMessage(LcdRegisterSelect registerSelectState)
         {
-            this.State = state;
+            this.RegisterSelectState = registerSelectState;
         }
     }
 }

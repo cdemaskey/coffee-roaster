@@ -92,6 +92,7 @@
     <Compile Include="Enums\Ads1118SingleShot.cs" />
     <Compile Include="Enums\Ads1118TemperatureSensorMode.cs" />
     <Compile Include="Enums\LcdCommand.cs" />
+    <Compile Include="Enums\LcdRegisterSelect.cs" />
     <Compile Include="ITi430BoostAds1118Connection.cs" />
     <Compile Include="Enums\LcdLine.cs" />
     <Compile Include="Messages\DisplayStringOnLcdMessage.cs" />
@@ -99,7 +100,9 @@
     <Compile Include="Messages\TransferLcdCharacterMessage.cs" />
     <Compile Include="Messages\TransferLcdCommandMessage.cs" />
     <Compile Include="Results\OperationResult.cs" />
+    <Compile Include="Services\ILcdRegisterSelectService.cs" />
     <Compile Include="Services\ILcdSpiService.cs" />
+    <Compile Include="Services\LcdRegisterSelectService.cs" />
     <Compile Include="Services\LcdSpiService.cs" />
     <Compile Include="Ti430BoostAds1118Connection.cs" />
     <Compile Include="Program.cs" />

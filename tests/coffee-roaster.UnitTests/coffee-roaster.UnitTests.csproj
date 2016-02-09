@@ -94,6 +94,7 @@
     <Compile Include="Actors\LcdTransferDataActorUnitTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\LcdSpiServiceUnitTests.cs" />
+    <Compile Include="Services\LcdRegisterSelectServiceUnitTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

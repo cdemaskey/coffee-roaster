@@ -2,8 +2,6 @@
 using CoffeeRoaster.Messages;
 using CoffeeRoaster.Results;
 using CoffeeRoaster.Services;
-using Raspberry.IO.SerialPeripheralInterface;
-using System;
 
 namespace CoffeeRoaster.Actors
 {

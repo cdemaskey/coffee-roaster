@@ -1,21 +1,22 @@
 ﻿using Akka.Actor;
 using CoffeeRoaster.Messages;
 using CoffeeRoaster.Results;
+using CoffeeRoaster.Services;
 using Raspberry.IO;
 
 namespace CoffeeRoaster.Actors
 {
     public class LcdRegisterSelectActor : ReceiveActor
     {
-        private readonly IOutputBinaryPin lcdRegisterSelectGpio;
+        private readonly ILcdRegisterSelectService lcdRegisterSelectService;
 
-        public LcdRegisterSelectActor(IOutputBinaryPin lcdRegisterSelectGpio)
+        public LcdRegisterSelectActor(ILcdRegisterSelectService lcdRegisterSelectService)
         {
-            this.lcdRegisterSelectGpio = lcdRegisterSelectGpio;
+            this.lcdRegisterSelectService = lcdRegisterSelectService;
 
             this.Receive<SetLcdRegisterSelectMessage>(setRegsister =>
             {
-                this.lcdRegisterSelectGpio.Write(setRegsister.State);
+                this.lcdRegisterSelectService.SetLcdRegisterSelectState(setRegsister.RegisterSelectState);
 
                 this.Sender.Tell(new OperationResult(true));
             });
