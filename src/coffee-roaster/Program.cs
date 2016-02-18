@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using Akka.DI.AutoFac;
 using Autofac;
+using CoffeeRoaster.Actors;
 using CoffeeRoaster.Services;
 using Raspberry.IO.GeneralPurpose;
 using Raspberry.IO.SerialPeripheralInterface;
@@ -10,6 +11,7 @@ namespace CoffeeRoaster
     public class Program
     {
         private const ConnectorPin LcdResetGpio = ConnectorPin.P1Pin16;
+        private const ConnectorPin LcdRegisterSelectGpio = ConnectorPin.P1Pin11;
         private const uint MaxSpeed = 125000000;
         private const int BitsPerWord = 8;
         private const string SpiDev0 = "/dev/spidev0.0";
@@ -31,8 +33,15 @@ namespace CoffeeRoaster
             });
             builder.Register<ILcdRegisterSelectService>((c, p) =>
             {
-                return new LcdRegisterSelectService(c.Resolve<MemoryGpioConnectionDriver>().Out(ConnectorPin.P1Pin11));
+                return new LcdRegisterSelectService(c.Resolve<MemoryGpioConnectionDriver>().Out(LcdRegisterSelectGpio));
             });
+
+            // register actors
+            builder.RegisterType<AnalogToDigitalConverterActor>();
+            builder.RegisterType<CoffeeRoasterActor>();
+            builder.RegisterType<LcdActor>();
+            builder.RegisterType<LcdRegisterSelectActor>();
+            builder.RegisterType<LcdTransferDataActor>();
 
             // build container
             var container = builder.Build();

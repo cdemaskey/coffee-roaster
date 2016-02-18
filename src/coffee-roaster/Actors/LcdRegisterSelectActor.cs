@@ -2,7 +2,6 @@
 using CoffeeRoaster.Messages;
 using CoffeeRoaster.Results;
 using CoffeeRoaster.Services;
-using Raspberry.IO;
 
 namespace CoffeeRoaster.Actors
 {

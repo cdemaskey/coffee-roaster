@@ -91,6 +91,7 @@
     <Compile Include="Enums\Ads1118PullupEnable.cs" />
     <Compile Include="Enums\Ads1118SingleShot.cs" />
     <Compile Include="Enums\Ads1118TemperatureSensorMode.cs" />
+    <Compile Include="Enums\CoffeeRoasterStateEnum.cs" />
     <Compile Include="Enums\LcdCommand.cs" />
     <Compile Include="Enums\LcdRegisterSelect.cs" />
     <Compile Include="ITi430BoostAds1118Connection.cs" />
