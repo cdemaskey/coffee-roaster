@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.DI.Core;
+using Akka.Routing;
 using CoffeeRoaster.Enums;
 using CoffeeRoaster.Messages;
 

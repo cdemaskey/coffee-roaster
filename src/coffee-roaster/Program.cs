@@ -1,7 +1,10 @@
 ﻿using Akka.Actor;
 using Akka.DI.AutoFac;
+using Akka.DI.Core;
 using Autofac;
 using CoffeeRoaster.Actors;
+using CoffeeRoaster.Enums;
+using CoffeeRoaster.Messages;
 using CoffeeRoaster.Services;
 using Raspberry.IO.GeneralPurpose;
 using Raspberry.IO.SerialPeripheralInterface;
@@ -19,22 +22,20 @@ namespace CoffeeRoaster
 
         public static void Main(string[] args)
         {
-            var driver = new MemoryGpioConnectionDriver();
-
             // create container builder
             var builder = new ContainerBuilder();
 
             // register types
-            builder.RegisterInstance<MemoryGpioConnectionDriver>(driver);
-            builder.RegisterType<INativeSpiConnection>().As<NativeSpiConnection>();
-            builder.Register<ILcdSpiService>((c, p) =>
+            builder.RegisterType<MemoryGpioConnectionDriver>().SingleInstance();
+            builder.RegisterType<NativeSpiConnection>().As<INativeSpiConnection>();
+            builder.Register((c, p) =>
             {
                 return new LcdSpiService(c.Resolve<INativeSpiConnection>(new NamedParameter("deviceFilePath", SpiDev0), new NamedParameter("settings", new SpiConnectionSettings() { BitsPerWord = BitsPerWord, Delay = 0, MaxSpeed = MaxSpeed, Mode = SpiMode.Mode0 })));
-            });
-            builder.Register<ILcdRegisterSelectService>((c, p) =>
+            }).As<ILcdSpiService>();
+            builder.Register((c, p) =>
             {
                 return new LcdRegisterSelectService(c.Resolve<MemoryGpioConnectionDriver>().Out(LcdRegisterSelectGpio));
-            });
+            }).As<ILcdRegisterSelectService>();
 
             // register actors
             builder.RegisterType<AnalogToDigitalConverterActor>();
@@ -47,10 +48,18 @@ namespace CoffeeRoaster
             var container = builder.Build();
 
             // create Akka.Net actor system
-            var system = ActorSystem.Create("coffee-roaster");
+            using (var system = ActorSystem.Create("coffee-roaster"))
+            {
 
-            // create the Akka.Net Dependency Resolver
-            var propsResolver = new AutoFacDependencyResolver(container, system);
+                // create the Akka.Net Dependency Resolver
+                var propsResolver = new AutoFacDependencyResolver(container, system);
+
+                //var coffeeRoasterRef = system.ActorOf(system.DI().Props<CoffeeRoasterActor>(), "CoffeeRoasterWorker");
+
+                var lcdActor = system.ActorOf(system.DI().Props<LcdActor>(), "LcdActor");
+
+                lcdActor.Tell(new DisplayStringOnLcdMessage(LcdLine.FirstLine, "Hi, I'm Coffee Roaster"));
+            }
 
             //try
             //{
