@@ -1,13 +1,11 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using CoffeeRoaster.Enums;
+using Moq;
 using Raspberry.IO;
 using Raspberry.IO.SerialPeripheralInterface;
-using Moq;
-using CoffeeRoaster.Enums;
+using Xunit;
 
 namespace CoffeeRoaster.UnitTests
 {
-    [TestClass]
     public class Ti430BoostAds1118ConnectionUnitTests
     {
         private Mock<IOutputBinaryPin> mockLcdRegisterSelectGpio;
@@ -17,7 +15,6 @@ namespace CoffeeRoaster.UnitTests
 
         private ITi430BoostAds1118Connection ads1118Connection;
 
-        [TestInitialize]
         public void InitializeTest()
         {
             this.mockLcdRegisterSelectGpio = new Mock<IOutputBinaryPin>();
@@ -28,7 +25,7 @@ namespace CoffeeRoaster.UnitTests
             this.ads1118Connection = new Ti430BoostAds1118Connection(this.mockSpi0.Object, this.mockSpi1.Object, this.mockLcdRegisterSelectGpio.Object, this.mockLcdResetGpio.Object);
         }
 
-        [TestMethod]
+        [Fact]
         public void ThermTransact_Test()
         {
             // arrange
@@ -39,7 +36,7 @@ namespace CoffeeRoaster.UnitTests
             var actual = this.ads1118Connection.ThermTransact(inputMode, inputChannel);
 
             // assert
-            Assert.AreEqual(1, actual);
+            Assert.Equal(1, actual);
         }
     }
 }
