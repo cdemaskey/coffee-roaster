@@ -1,6 +1,6 @@
 ﻿using CoffeeRoaster.Enums;
-using Raspberry.IO;
-using Raspberry.IO.SerialPeripheralInterface;
+// using Raspberry.IO;
+// using Raspberry.IO.SerialPeripheralInterface;
 using System;
 using System.Threading;
 
@@ -26,32 +26,32 @@ namespace CoffeeRoaster
         private const int BitsPerWord = 8;
         private const int SpiSpeed = 3932160;
 
-        private readonly INativeSpiConnection spi0;
-        private readonly INativeSpiConnection spi1;
-        private readonly IOutputBinaryPin lcdRegisterSelectGpio; // LCD Register Select Signal. RS=0: instruction; RS=1: data
-        private readonly IOutputBinaryPin lcdResetGpio;
+        // private readonly INativeSpiConnection spi0;
+        // private readonly INativeSpiConnection spi1;
+        // private readonly IOutputBinaryPin lcdRegisterSelectGpio; // LCD Register Select Signal. RS=0: instruction; RS=1: data
+        // private readonly IOutputBinaryPin lcdResetGpio;
 
-        private readonly Ads1118SingleShot singleShot;
-        private readonly Ads1118ProgrammableGainAmplifier pga;
-        private readonly Ads1118DeviceOperatingMode deviceOperatingMode;
-        private readonly Ads1118DataRate dataRate;
-        private readonly Ads1118PullupEnable pullupEnabled;
+        // private readonly Ads1118SingleShot singleShot;
+        // private readonly Ads1118ProgrammableGainAmplifier pga;
+        // private readonly Ads1118DeviceOperatingMode deviceOperatingMode;
+        // private readonly Ads1118DataRate dataRate;
+        // private readonly Ads1118PullupEnable pullupEnabled;
 
-        public Ti430BoostAds1118Connection(INativeSpiConnection spi0, INativeSpiConnection spi1, IOutputBinaryPin lcdRegisterSelectGpio, IOutputBinaryPin lcdResetGpio)
+        public Ti430BoostAds1118Connection(/*INativeSpiConnection spi0, INativeSpiConnection spi1, IOutputBinaryPin lcdRegisterSelectGpio, IOutputBinaryPin lcdResetGpio*/)
         {
-            this.singleShot = Ads1118SingleShot.SingleShot;
-            this.pga = Ads1118ProgrammableGainAmplifier.TwoFiveSix;
-            this.deviceOperatingMode = Ads1118DeviceOperatingMode.PowerDownSingleShotMode;
-            this.dataRate = Ads1118DataRate.OneTwoEight;
-            this.pullupEnabled = Ads1118PullupEnable.PullupEnabled;
+            // this.singleShot = Ads1118SingleShot.SingleShot;
+            // this.pga = Ads1118ProgrammableGainAmplifier.TwoFiveSix;
+            // this.deviceOperatingMode = Ads1118DeviceOperatingMode.PowerDownSingleShotMode;
+            // this.dataRate = Ads1118DataRate.OneTwoEight;
+            // this.pullupEnabled = Ads1118PullupEnable.PullupEnabled;
 
-            this.spi0 = spi0;
-            this.spi1 = spi1;
-            this.lcdRegisterSelectGpio = lcdRegisterSelectGpio;
-            this.lcdResetGpio = lcdResetGpio;
+            // this.spi0 = spi0;
+            // this.spi1 = spi1;
+            // this.lcdRegisterSelectGpio = lcdRegisterSelectGpio;
+            // this.lcdResetGpio = lcdResetGpio;
 
-            this.lcdRegisterSelectGpio.Write(true);
-            this.lcdResetGpio.Write(true);
+            // this.lcdRegisterSelectGpio.Write(true);
+            // this.lcdResetGpio.Write(true);
         }
 
         public void DelayMicroSeconds(int milliSeconds)
@@ -63,7 +63,7 @@ namespace CoffeeRoaster
 
         public void InitializeLcd()
         {
-            this.lcdRegisterSelectGpio.Write(true);
+            // this.lcdRegisterSelectGpio.Write(true);
             this.WriteCommandToLcd(LcdCommand.WakeUp);
             this.WriteCommandToLcd(LcdCommand.FunctionSet);
             this.WriteCommandToLcd(LcdCommand.InternalOscFrequency);
@@ -78,18 +78,18 @@ namespace CoffeeRoaster
 
         public void WriteCommandToLcd(LcdCommand command)
         {
-            this.lcdRegisterSelectGpio.Write(false);
+            // this.lcdRegisterSelectGpio.Write(false);
             var ret = 0;
 
-            using (var transferBuffer = this.spi0.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
-            {
-                transferBuffer.Tx[0] = Convert.ToByte(command);
-                transferBuffer.Delay = 0;
-                transferBuffer.Speed = SpiSpeed;
-                transferBuffer.BitsPerWord = BitsPerWord;
-                transferBuffer.ChipSelectChange = false;
-                ret = this.spi0.Transfer(transferBuffer);
-            }
+            // using (var transferBuffer = this.spi0.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
+            // {
+            //     transferBuffer.Tx[0] = Convert.ToByte(command);
+            //     transferBuffer.Delay = 0;
+            //     transferBuffer.Speed = SpiSpeed;
+            //     transferBuffer.BitsPerWord = BitsPerWord;
+            //     transferBuffer.ChipSelectChange = false;
+            //     ret = this.spi0.Transfer(transferBuffer);
+            // }
 
             if (ret < 0)
             {
@@ -100,17 +100,17 @@ namespace CoffeeRoaster
 
         public void WriteDataToLcd(char c)
         {
-            this.lcdRegisterSelectGpio.Write(true);
+            // this.lcdRegisterSelectGpio.Write(true);
             var ret = 0;
-            using (var transferBuffer = this.spi0.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
-            {
-                transferBuffer.Tx[0] = Convert.ToByte(c);
-                transferBuffer.Delay = 0;
-                transferBuffer.Speed = SpiSpeed;
-                transferBuffer.BitsPerWord = BitsPerWord;
-                transferBuffer.ChipSelectChange = false;
-                ret = this.spi0.Transfer(transferBuffer);
-            }
+            // using (var transferBuffer = this.spi0.CreateTransferBuffer(1, SpiTransferMode.ReadWrite))
+            // {
+            //     transferBuffer.Tx[0] = Convert.ToByte(c);
+            //     transferBuffer.Delay = 0;
+            //     transferBuffer.Speed = SpiSpeed;
+            //     transferBuffer.BitsPerWord = BitsPerWord;
+            //     transferBuffer.ChipSelectChange = false;
+            //     ret = this.spi0.Transfer(transferBuffer);
+            // }
 
             if (ret < 0)
             {
@@ -338,46 +338,46 @@ namespace CoffeeRoaster
         {
             int ret;
 
-            using (var transferBuffer = this.spi1.CreateTransferBuffer(4, SpiTransferMode.ReadWrite))
-            {
-                if (mode == Ads1118TemperatureSensorMode.ExternalSignal && channel == Ads1118InputMultiplexer.Ain0Ain1)
-                {
-                    transferBuffer.Tx[0] = Convert.ToByte(0x8b);
-                    transferBuffer.Tx[1] = Convert.ToByte(0x8a);
-                    transferBuffer.Tx[2] = Convert.ToByte(0x8b);
-                    transferBuffer.Tx[3] = Convert.ToByte(0x8a);
-                }
-                else if (mode == Ads1118TemperatureSensorMode.InternalSensor && channel == Ads1118InputMultiplexer.Ain0Ain1)
-                {
-                    transferBuffer.Tx[0] = Convert.ToByte(0x8b);
-                    transferBuffer.Tx[1] = Convert.ToByte(0x9a);
-                    transferBuffer.Tx[2] = Convert.ToByte(0x8b);
-                    transferBuffer.Tx[3] = Convert.ToByte(0x9a);
-                }
+            // using (var transferBuffer = this.spi1.CreateTransferBuffer(4, SpiTransferMode.ReadWrite))
+            // {
+            //     if (mode == Ads1118TemperatureSensorMode.ExternalSignal && channel == Ads1118InputMultiplexer.Ain0Ain1)
+            //     {
+            //         transferBuffer.Tx[0] = Convert.ToByte(0x8b);
+            //         transferBuffer.Tx[1] = Convert.ToByte(0x8a);
+            //         transferBuffer.Tx[2] = Convert.ToByte(0x8b);
+            //         transferBuffer.Tx[3] = Convert.ToByte(0x8a);
+            //     }
+            //     else if (mode == Ads1118TemperatureSensorMode.InternalSensor && channel == Ads1118InputMultiplexer.Ain0Ain1)
+            //     {
+            //         transferBuffer.Tx[0] = Convert.ToByte(0x8b);
+            //         transferBuffer.Tx[1] = Convert.ToByte(0x9a);
+            //         transferBuffer.Tx[2] = Convert.ToByte(0x8b);
+            //         transferBuffer.Tx[3] = Convert.ToByte(0x9a);
+            //     }
 
-                Console.Write("sending [{0} {1} {2} {3}]. ", transferBuffer.Tx[0].ToString("x2"), transferBuffer.Tx[1].ToString("x2"), transferBuffer.Tx[2].ToString("x2"), transferBuffer.Tx[3].ToString("x2"));
+            //     Console.Write("sending [{0} {1} {2} {3}]. ", transferBuffer.Tx[0].ToString("x2"), transferBuffer.Tx[1].ToString("x2"), transferBuffer.Tx[2].ToString("x2"), transferBuffer.Tx[3].ToString("x2"));
 
-                transferBuffer.Delay = 0;
-                transferBuffer.Speed = SpiSpeed;
-                transferBuffer.BitsPerWord = BitsPerWord;
-                transferBuffer.ChipSelectChange = false;
+            //     transferBuffer.Delay = 0;
+            //     transferBuffer.Speed = SpiSpeed;
+            //     transferBuffer.BitsPerWord = BitsPerWord;
+            //     transferBuffer.ChipSelectChange = false;
 
-                ret = this.spi1.Transfer(transferBuffer);
+            //     ret = this.spi1.Transfer(transferBuffer);
 
-                if (ret < 0)
-                {
-                    Console.WriteLine("Error performing SPI exchange: {0}", Console.Error.ToString());
-                    Environment.Exit(1);
-                }
+            //     if (ret < 0)
+            //     {
+            //         Console.WriteLine("Error performing SPI exchange: {0}", Console.Error.ToString());
+            //         Environment.Exit(1);
+            //     }
 
                 ret = 0;
 
-                Console.WriteLine("received [{0} {1} {2} {3}]", transferBuffer.Rx[0].ToString("x2"), transferBuffer.Rx[1].ToString("x2"), transferBuffer.Rx[2].ToString("x2"), transferBuffer.Rx[3].ToString("x2"));
+            //     Console.WriteLine("received [{0} {1} {2} {3}]", transferBuffer.Rx[0].ToString("x2"), transferBuffer.Rx[1].ToString("x2"), transferBuffer.Rx[2].ToString("x2"), transferBuffer.Rx[3].ToString("x2"));
 
-                ret = transferBuffer.Rx[0];
-                ret = ret << 8;
-                ret = ret | transferBuffer.Rx[1];
-            }
+            //     ret = transferBuffer.Rx[0];
+            //     ret = ret << 8;
+            //     ret = ret | transferBuffer.Rx[1];
+            // }
 
             return ret;
         }
@@ -392,10 +392,10 @@ namespace CoffeeRoaster
         {
             if (disposing)
             {
-                this.spi0?.Dispose();
-                this.spi1?.Dispose();
-                this.lcdRegisterSelectGpio?.Dispose();
-                this.lcdResetGpio?.Dispose();
+                // this.spi0?.Dispose();
+                // this.spi1?.Dispose();
+                // this.lcdRegisterSelectGpio?.Dispose();
+                // this.lcdResetGpio?.Dispose();
             }
         }
 
@@ -403,17 +403,17 @@ namespace CoffeeRoaster
         {
             var config = new byte[2];
 
-            switch (this.singleShot)
-            {
-                case Ads1118SingleShot.NoEffect:
-                    config[0] = 0;
-                    break;
+            // switch (this.singleShot)
+            // {
+            //     case Ads1118SingleShot.NoEffect:
+            //         config[0] = 0;
+            //         break;
 
-                case Ads1118SingleShot.SingleShot:
-                default:
-                    config[0] = 1;
-                    break;
-            }
+            //     case Ads1118SingleShot.SingleShot:
+            //     default:
+            //         config[0] = 1;
+            //         break;
+            // }
 
             switch (channel)
             {
